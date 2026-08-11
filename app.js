@@ -1,85 +1,194 @@
 /* =========================================================
-   MohaBank
-   Personal Finance Manager
-   No Server - No Database
-   ========================================================= */
+   MONEY MANAGER
+   Pure JavaScript
+   LocalStorage
+   No Backend
+   No Database Server
+========================================================= */
 
-const STORAGE_KEY = "mohabank_data_v1";
 
-let data = {
+/* =========================================================
+   STORAGE KEY
+========================================================= */
+
+const STORAGE_KEY = "money_manager_v1";
+
+
+/* =========================================================
+   DEFAULT DATA
+========================================================= */
+
+const defaultData = {
+
     transactions: [],
+
     debts: [],
-    settings: {
-        currency: "JOD",
-        darkMode: false
-    }
+
+    accounts: [
+        {
+            id: generateId(),
+            name: "نقدي",
+            type: "cash",
+            initialBalance: 0
+        }
+    ],
+
+    categories: [
+        {
+            id: "food",
+            name: "أكل",
+            icon: "🍔",
+            type: "expense"
+        },
+
+        {
+            id: "fuel",
+            name: "بنزين",
+            icon: "⛽",
+            type: "expense"
+        },
+
+        {
+            id: "car",
+            name: "سيارة",
+            icon: "🚗",
+            type: "expense"
+        },
+
+        {
+            id: "home",
+            name: "منزل",
+            icon: "🏠",
+            type: "expense"
+        },
+
+        {
+            id: "shopping",
+            name: "مشتريات",
+            icon: "🛒",
+            type: "expense"
+        },
+
+        {
+            id: "education",
+            name: "تعليم",
+            icon: "🎓",
+            type: "expense"
+        },
+
+        {
+            id: "entertainment",
+            name: "ترفيه",
+            icon: "🎮",
+            type: "expense"
+        },
+
+        {
+            id: "phone",
+            name: "اتصالات",
+            icon: "📱",
+            type: "expense"
+        },
+
+        {
+            id: "clothes",
+            name: "ملابس",
+            icon: "👕",
+            type: "expense"
+        },
+
+        {
+            id: "health",
+            name: "صحة",
+            icon: "💊",
+            type: "expense"
+        },
+
+        {
+            id: "other",
+            name: "أخرى",
+            icon: "📦",
+            type: "expense"
+        },
+
+        {
+            id: "salary",
+            name: "راتب",
+            icon: "💼",
+            type: "income"
+        },
+
+        {
+            id: "freelance",
+            name: "عمل حر",
+            icon: "💻",
+            type: "income"
+        },
+
+        {
+            id: "gift",
+            name: "هدية",
+            icon: "🎁",
+            type: "income"
+        },
+
+        {
+            id: "other_income",
+            name: "دخل آخر",
+            icon: "💰",
+            type: "income"
+        }
+    ],
+
+    budget: 0
+
 };
 
-let currentDebtTab = "all";
-
 
 /* =========================================================
-   INITIALIZATION
-   ========================================================= */
+   LOAD DATA
+========================================================= */
 
-document.addEventListener("DOMContentLoaded", () => {
+let data = loadData();
 
-    loadData();
-
-    initializeDateInputs();
-
-    applyTheme();
-
-    document.getElementById("transactionForm")
-        .addEventListener("submit", saveTransaction);
-
-    document.getElementById("debtForm")
-        .addEventListener("submit", saveDebt);
-
-    renderAll();
-
-    registerServiceWorker();
-});
-
-
-/* =========================================================
-   STORAGE
-   ========================================================= */
 
 function loadData() {
 
+    const saved = localStorage.getItem(STORAGE_KEY);
+
+    if (!saved) {
+
+        return JSON.parse(
+            JSON.stringify(defaultData)
+        );
+
+    }
+
     try {
 
-        const saved = localStorage.getItem(STORAGE_KEY);
+        const parsed = JSON.parse(saved);
 
-        if (saved) {
-
-            const parsed = JSON.parse(saved);
-
-            data = {
-                transactions: Array.isArray(parsed.transactions)
-                    ? parsed.transactions
-                    : [],
-
-                debts: Array.isArray(parsed.debts)
-                    ? parsed.debts
-                    : [],
-
-                settings: {
-                    currency: parsed.settings?.currency || "JOD",
-                    darkMode: parsed.settings?.darkMode || false
-                }
-            };
-        }
+        return {
+            ...defaultData,
+            ...parsed
+        };
 
     } catch (error) {
 
-        console.error("Loading error:", error);
+        console.error(error);
 
-        showToast("تعذر تحميل البيانات");
+        return JSON.parse(
+            JSON.stringify(defaultData)
+        );
+
     }
+
 }
 
+
+/* =========================================================
+   SAVE DATA
+========================================================= */
 
 function saveData() {
 
@@ -87,288 +196,1529 @@ function saveData() {
         STORAGE_KEY,
         JSON.stringify(data)
     );
+
 }
 
 
 /* =========================================================
-   CURRENCY
-   ========================================================= */
+   ID GENERATOR
+========================================================= */
 
-function getCurrencySymbol() {
+function generateId() {
 
-    const symbols = {
-        JOD: "د.أ",
-        USD: "$",
-        SAR: "ر.س",
-        AED: "د.إ"
-    };
+    return Date.now().toString(36)
+        + Math.random()
+            .toString(36)
+            .substring(2, 8);
 
-    return symbols[data.settings.currency] || "د.أ";
-}
-
-
-function formatMoney(amount) {
-
-    const number = Number(amount) || 0;
-
-    return `${number.toLocaleString("en-US", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    })} ${getCurrencySymbol()}`;
 }
 
 
 /* =========================================================
-   DATE
-   ========================================================= */
+   FORMAT MONEY
+========================================================= */
+
+function money(value) {
+
+    return Number(value || 0)
+        .toLocaleString("ar-JO", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+
+}
+
+
+/* =========================================================
+   DATE HELPERS
+========================================================= */
 
 function today() {
 
-    const d = new Date();
+    const date = new Date();
 
-    const year = d.getFullYear();
+    const year = date.getFullYear();
 
-    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const month =
+        String(date.getMonth() + 1)
+            .padStart(2, "0");
 
-    const day = String(d.getDate()).padStart(2, "0");
+    const day =
+        String(date.getDate())
+            .padStart(2, "0");
 
     return `${year}-${month}-${day}`;
-}
 
-
-function initializeDateInputs() {
-
-    document.getElementById("transactionDate").value = today();
-
-    document.getElementById("debtDate").value = today();
 }
 
 
 function formatDate(dateString) {
 
-    if (!dateString) {
-        return "-";
-    }
+    if (!dateString) return "-";
 
     const date = new Date(dateString + "T00:00:00");
 
-    return date.toLocaleDateString("ar-JO", {
-        year: "numeric",
-        month: "short",
-        day: "numeric"
-    });
+    return date.toLocaleDateString(
+        "ar-JO",
+        {
+            year: "numeric",
+            month: "short",
+            day: "numeric"
+        }
+    );
+
+}
+
+
+/* =========================================================
+   MONTH HELPERS
+========================================================= */
+
+function currentMonth() {
+
+    const date = new Date();
+
+    return date.getMonth();
+
+}
+
+
+function currentYear() {
+
+    return new Date().getFullYear();
+
+}
+
+
+function isCurrentMonth(dateString) {
+
+    if (!dateString) return false;
+
+    const date = new Date(
+        dateString + "T00:00:00"
+    );
+
+    return (
+        date.getMonth() === currentMonth()
+        &&
+        date.getFullYear() === currentYear()
+    );
+
+}
+
+
+/* =========================================================
+   DOM READY
+========================================================= */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    initialize
+);
+
+
+function initialize() {
+
+    setupNavigation();
+
+    setupEvents();
+
+    setDefaultDates();
+
+    populateCategories();
+
+    populateAccounts();
+
+    renderAll();
+
 }
 
 
 /* =========================================================
    NAVIGATION
-   ========================================================= */
+========================================================= */
 
-function showPage(pageId, button = null) {
+function setupNavigation() {
 
-    document.querySelectorAll(".page").forEach(page => {
-        page.classList.remove("active");
-    });
+    document
+        .querySelectorAll(".nav-item")
+        .forEach(button => {
 
-    const page = document.getElementById(pageId);
+            button.addEventListener(
+                "click",
+                () => {
+
+                    const page =
+                        button.dataset.page;
+
+                    showPage(page);
+
+                }
+            );
+
+        });
+
+}
+
+
+function showPage(pageName) {
+
+    document
+        .querySelectorAll(".nav-item")
+        .forEach(button => {
+
+            button.classList.toggle(
+                "active",
+                button.dataset.page === pageName
+            );
+
+        });
+
+
+    document
+        .querySelectorAll(".page")
+        .forEach(page => {
+
+            page.classList.remove("active");
+
+        });
+
+
+    const page =
+        document.getElementById(
+            pageName + "Page"
+        );
 
     if (page) {
+
         page.classList.add("active");
+
     }
 
-    document.querySelectorAll(".nav-btn").forEach(btn => {
-        btn.classList.remove("active");
-    });
 
-    if (button) {
+    const titles = {
 
-        button.classList.add("active");
+        dashboard: [
+            "الرئيسية",
+            "نظرة عامة على وضعك المالي"
+        ],
 
-    } else {
+        transactions: [
+            "العمليات",
+            "إدارة الدخل والمصاريف"
+        ],
 
-        const matchingButton =
-            [...document.querySelectorAll(".nav-btn")]
-                .find(btn => btn.getAttribute("onclick")?.includes(`'${pageId}'`));
+        debts: [
+            "الديون",
+            "مين إلك ومين عليك"
+        ],
 
-        if (matchingButton) {
-            matchingButton.classList.add("active");
-        }
+        accounts: [
+            "الحسابات",
+            "إدارة حساباتك ومحافظك"
+        ],
+
+        reports: [
+            "التقارير",
+            "تحليل وضعك المالي"
+        ],
+
+        settings: [
+            "الإعدادات",
+            "النسخ الاحتياطي والإعدادات"
+        ]
+
+    };
+
+
+    if (titles[pageName]) {
+
+        document.getElementById(
+            "pageTitle"
+        ).textContent =
+            titles[pageName][0];
+
+
+        document.getElementById(
+            "pageSubtitle"
+        ).textContent =
+            titles[pageName][1];
+
     }
 
-    window.scrollTo({
-        top: 0,
-        behavior: "smooth"
-    });
 
-    renderAll();
+    if (pageName === "reports") {
+
+        renderReports();
+
+    }
+
+
+    if (pageName === "dashboard") {
+
+        renderDashboard();
+
+    }
+
+
+    if (pageName === "debts") {
+
+        renderDebts();
+
+    }
+
+
+    if (pageName === "accounts") {
+
+        renderAccounts();
+
+    }
+
+
+    if (pageName === "transactions") {
+
+        renderTransactions();
+
+    }
+
+
+    // close mobile sidebar
+
+    document
+        .querySelector(".sidebar")
+        .classList.remove("open");
+
 }
 
 
 /* =========================================================
-   TRANSACTION MODAL
-   ========================================================= */
+   EVENT SETUP
+========================================================= */
 
-function openTransactionModal(type = "income", id = null) {
+function setupEvents() {
 
-    const modal = document.getElementById("transactionModal");
+    document
+        .getElementById("quickAddBtn")
+        .addEventListener(
+            "click",
+            () => openModal("quickModal")
+        );
 
-    const form = document.getElementById("transactionForm");
 
-    form.reset();
+    document
+        .getElementById("mobileMenuBtn")
+        .addEventListener(
+            "click",
+            () => {
 
-    document.getElementById("transactionDate").value = today();
+                document
+                    .querySelector(".sidebar")
+                    .classList.toggle("open");
 
-    document.getElementById("transactionId").value = "";
+            }
+        );
 
-    document.getElementById("transactionModalTitle").textContent =
-        id ? "تعديل العملية" : "إضافة عملية";
 
-    selectTransactionType(type);
+    document
+        .getElementById("toggleBalanceBtn")
+        .addEventListener(
+            "click",
+            toggleBalance
+        );
 
-    if (id) {
 
-        const transaction =
-            data.transactions.find(item => item.id === id);
+    document
+        .getElementById("transactionForm")
+        .addEventListener(
+            "submit",
+            saveTransaction
+        );
 
-        if (!transaction) {
-            return;
-        }
 
-        document.getElementById("transactionId").value =
-            transaction.id;
+    document
+        .getElementById("debtForm")
+        .addEventListener(
+            "submit",
+            saveDebt
+        );
 
-        document.getElementById("transactionAmount").value =
-            transaction.amount;
 
-        document.getElementById("transactionTitle").value =
-            transaction.title;
+    document
+        .getElementById("accountForm")
+        .addEventListener(
+            "submit",
+            saveAccount
+        );
 
-        document.getElementById("transactionCategory").value =
-            transaction.category;
 
-        document.getElementById("transactionDate").value =
-            transaction.date;
+    document
+        .getElementById("transactionSearch")
+        .addEventListener(
+            "input",
+            renderTransactions
+        );
 
-        document.getElementById("transactionNote").value =
-            transaction.note || "";
 
-        selectTransactionType(transaction.type);
-    }
+    document
+        .getElementById("transactionTypeFilter")
+        .addEventListener(
+            "change",
+            renderTransactions
+        );
 
-    modal.classList.add("show");
+
+    document
+        .getElementById("transactionCategoryFilter")
+        .addEventListener(
+            "change",
+            renderTransactions
+        );
+
+
+    document
+        .getElementById("exportBtn")
+        .addEventListener(
+            "click",
+            exportData
+        );
+
+
+    document
+        .getElementById("importFile")
+        .addEventListener(
+            "change",
+            importData
+        );
+
+
+    document
+        .getElementById("clearDataBtn")
+        .addEventListener(
+            "click",
+            clearAllData
+        );
+
+
+    document
+        .getElementById("saveBudgetBtn")
+        .addEventListener(
+            "click",
+            saveBudget
+        );
+
+
+    document
+        .getElementById("reportMonth")
+        .addEventListener(
+            "change",
+            renderReports
+        );
+
+
+    document
+        .getElementById("reportYear")
+        .addEventListener(
+            "change",
+            renderReports
+        );
+
+
+    document
+        .querySelectorAll("[data-debt-filter]")
+        .forEach(button => {
+
+            button.addEventListener(
+                "click",
+                () => {
+
+                    document
+                        .querySelectorAll("[data-debt-filter]")
+                        .forEach(btn =>
+                            btn.classList.remove("active")
+                        );
+
+                    button.classList.add("active");
+
+                    renderDebts(
+                        button.dataset.debtFilter
+                    );
+
+                }
+            );
+
+        });
+
 }
 
 
-function selectTransactionType(type) {
+/* =========================================================
+   RENDER ALL
+========================================================= */
 
-    document.getElementById("transactionType").value = type;
+function renderAll() {
 
-    const incomeBtn =
-        document.getElementById("incomeTypeBtn");
+    populateCategories();
 
-    const expenseBtn =
-        document.getElementById("expenseTypeBtn");
+    populateAccounts();
 
-    incomeBtn.classList.remove(
-        "active-income",
-        "active-expense"
-    );
+    renderDashboard();
 
-    expenseBtn.classList.remove(
-        "active-income",
-        "active-expense"
-    );
+    renderTransactions();
 
-    if (type === "income") {
+    renderDebts();
 
-        incomeBtn.classList.add("active-income");
+    renderAccounts();
+
+    initializeReports();
+
+    renderReports();
+
+    document.getElementById(
+        "monthlyBudget"
+    ).value = data.budget || 0;
+
+}
+
+
+/* =========================================================
+   DASHBOARD
+========================================================= */
+
+function renderDashboard() {
+
+    const balance =
+        calculateTotalBalance();
+
+
+    document.getElementById(
+        "totalBalance"
+    ).textContent =
+        money(balance);
+
+
+    const income =
+        data.transactions
+            .filter(t =>
+                t.type === "income"
+                &&
+                isCurrentMonth(t.date)
+            )
+            .reduce(
+                (sum, t) =>
+                    sum + Number(t.amount),
+                0
+            );
+
+
+    const expense =
+        data.transactions
+            .filter(t =>
+                t.type === "expense"
+                &&
+                isCurrentMonth(t.date)
+            )
+            .reduce(
+                (sum, t) =>
+                    sum + Number(t.amount),
+                0
+            );
+
+
+    document.getElementById(
+        "monthlyIncome"
+    ).textContent =
+        money(income) + " د.أ";
+
+
+    document.getElementById(
+        "monthlyExpense"
+    ).textContent =
+        money(expense) + " د.أ";
+
+
+    const receivable =
+        calculateDebt(
+            "receivable"
+        );
+
+
+    const payable =
+        calculateDebt(
+            "payable"
+        );
+
+
+    document.getElementById(
+        "totalReceivable"
+    ).textContent =
+        money(receivable) + " د.أ";
+
+
+    document.getElementById(
+        "totalPayable"
+    ).textContent =
+        money(payable) + " د.أ";
+
+
+    const status =
+        document.getElementById(
+            "balanceStatus"
+        );
+
+
+    if (balance > 0) {
+
+        status.textContent =
+            "وضعك المالي جيد 👍";
+
+    } else if (balance === 0) {
+
+        status.textContent =
+            "رصيدك صفر حالياً";
 
     } else {
 
-        expenseBtn.classList.add("active-expense");
+        status.textContent =
+            "رصيدك الحالي بالسالب ⚠️";
+
     }
+
+
+    renderRecentTransactions();
+
+    renderExpenseChart();
+
+    renderBudget();
+
 }
 
 
-function closeModal(id) {
+/* =========================================================
+   CALCULATE BALANCE
+========================================================= */
 
-    document.getElementById(id).classList.remove("show");
+function calculateTotalBalance() {
+
+    let balance = 0;
+
+
+    data.accounts.forEach(account => {
+
+        balance +=
+            Number(account.initialBalance || 0);
+
+
+        data.transactions
+            .filter(t =>
+                t.accountId === account.id
+            )
+            .forEach(t => {
+
+                if (t.type === "income") {
+
+                    balance +=
+                        Number(t.amount);
+
+                } else {
+
+                    balance -=
+                        Number(t.amount);
+
+                }
+
+            });
+
+    });
+
+
+    return balance;
+
+}
+
+
+/* =========================================================
+   DEBT CALCULATION
+========================================================= */
+
+function calculateDebt(type) {
+
+    return data.debts
+        .filter(d =>
+            d.type === type
+            &&
+            d.status !== "paid"
+        )
+        .reduce(
+            (sum, d) =>
+                sum +
+                (
+                    Number(d.amount)
+                    -
+                    Number(d.paid || 0)
+                ),
+            0
+        );
+
+}
+
+
+/* =========================================================
+   RECENT TRANSACTIONS
+========================================================= */
+
+function renderRecentTransactions() {
+
+    const container =
+        document.getElementById(
+            "recentTransactions"
+        );
+
+
+    const transactions =
+        [...data.transactions]
+            .sort(
+                (a, b) =>
+                    new Date(b.date)
+                    -
+                    new Date(a.date)
+            )
+            .slice(0, 7);
+
+
+    if (!transactions.length) {
+
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">💸</div>
+                <p>لا توجد عمليات حتى الآن.</p>
+            </div>
+        `;
+
+        return;
+
+    }
+
+
+    container.innerHTML =
+        transactions
+            .map(transaction => {
+
+                const category =
+                    data.categories.find(
+                        c =>
+                            c.id ===
+                            transaction.categoryId
+                    );
+
+
+                const icon =
+                    category?.icon ||
+                    (
+                        transaction.type === "income"
+                            ? "💰"
+                            : "💸"
+                    );
+
+
+                const sign =
+                    transaction.type === "income"
+                        ? "+"
+                        : "-";
+
+
+                return `
+
+                    <div class="transaction-row">
+
+                        <div class="transaction-info">
+
+                            <div class="transaction-icon">
+                                ${icon}
+                            </div>
+
+                            <div>
+
+                                <div class="transaction-name">
+                                    ${escapeHTML(
+                                        transaction.description
+                                    )}
+                                </div>
+
+                                <div class="transaction-date">
+                                    ${formatDate(
+                                        transaction.date
+                                    )}
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        <div class="
+                            transaction-amount
+                            ${
+                                transaction.type === "income"
+                                    ? "amount-income"
+                                    : "amount-expense"
+                            }
+                        ">
+
+                            ${sign}
+                            ${money(transaction.amount)}
+                            د.أ
+
+                        </div>
+
+                    </div>
+
+                `;
+
+            })
+            .join("");
+
+}
+
+
+/* =========================================================
+   EXPENSE CHART
+========================================================= */
+
+let expenseChart = null;
+
+
+function renderExpenseChart() {
+
+    const canvas =
+        document.getElementById(
+            "expenseChart"
+        );
+
+
+    if (!canvas) return;
+
+
+    const totals = {};
+
+
+    data.transactions
+        .filter(t =>
+            t.type === "expense"
+            &&
+            isCurrentMonth(t.date)
+        )
+        .forEach(t => {
+
+            const category =
+                data.categories.find(
+                    c =>
+                        c.id ===
+                        t.categoryId
+                );
+
+
+            const name =
+                category?.name ||
+                "أخرى";
+
+
+            totals[name] =
+                (totals[name] || 0)
+                +
+                Number(t.amount);
+
+        });
+
+
+    const labels =
+        Object.keys(totals);
+
+
+    const values =
+        Object.values(totals);
+
+
+    if (expenseChart) {
+
+        expenseChart.destroy();
+
+    }
+
+
+    expenseChart =
+        new Chart(
+            canvas,
+            {
+
+                type: "doughnut",
+
+                data: {
+
+                    labels,
+
+                    datasets: [
+                        {
+                            data: values
+                        }
+                    ]
+
+                },
+
+                options: {
+
+                    responsive: true,
+
+                    maintainAspectRatio: false,
+
+                    plugins: {
+
+                        legend: {
+                            position: "bottom"
+                        }
+
+                    }
+
+                }
+
+            }
+        );
+
+}
+
+
+/* =========================================================
+   BUDGET
+========================================================= */
+
+function renderBudget() {
+
+    const spent =
+        data.transactions
+            .filter(t =>
+                t.type === "expense"
+                &&
+                isCurrentMonth(t.date)
+            )
+            .reduce(
+                (sum, t) =>
+                    sum + Number(t.amount),
+                0
+            );
+
+
+    const budget =
+        Number(data.budget || 0);
+
+
+    document.getElementById(
+        "budgetSpent"
+    ).textContent =
+        money(spent);
+
+
+    document.getElementById(
+        "budgetLimit"
+    ).textContent =
+        money(budget);
+
+
+    const progress =
+        document.getElementById(
+            "budgetProgress"
+        );
+
+
+    if (budget <= 0) {
+
+        progress.style.width = "0%";
+
+        document.getElementById(
+            "budgetMessage"
+        ).textContent =
+            "لم تحدد ميزانية شهرية بعد.";
+
+        return;
+
+    }
+
+
+    const percentage =
+        Math.min(
+            (spent / budget) * 100,
+            100
+        );
+
+
+    progress.style.width =
+        percentage + "%";
+
+
+    const message =
+        document.getElementById(
+            "budgetMessage"
+        );
+
+
+    if (percentage >= 100) {
+
+        message.textContent =
+            "⚠️ تجاوزت الميزانية الشهرية.";
+
+    } else if (percentage >= 80) {
+
+        message.textContent =
+            "⚠️ اقتربت من تجاوز الميزانية.";
+
+    } else {
+
+        message.textContent =
+            `متبقي ${money(
+                budget - spent
+            )} د.أ من الميزانية.`;
+
+    }
+
+}
+
+
+/* =========================================================
+   TRANSACTIONS
+========================================================= */
+
+function renderTransactions() {
+
+    const table =
+        document.getElementById(
+            "transactionsTable"
+        );
+
+
+    if (!table) return;
+
+
+    const search =
+        document.getElementById(
+            "transactionSearch"
+        ).value
+            .toLowerCase()
+            .trim();
+
+
+    const type =
+        document.getElementById(
+            "transactionTypeFilter"
+        ).value;
+
+
+    const category =
+        document.getElementById(
+            "transactionCategoryFilter"
+        ).value;
+
+
+    let transactions =
+        [...data.transactions];
+
+
+    if (search) {
+
+        transactions =
+            transactions.filter(t =>
+                String(t.description)
+                    .toLowerCase()
+                    .includes(search)
+                ||
+                String(t.note || "")
+                    .toLowerCase()
+                    .includes(search)
+            );
+
+    }
+
+
+    if (type !== "all") {
+
+        transactions =
+            transactions.filter(
+                t =>
+                    t.type === type
+            );
+
+    }
+
+
+    if (category !== "all") {
+
+        transactions =
+            transactions.filter(
+                t =>
+                    t.categoryId === category
+            );
+
+    }
+
+
+    transactions.sort(
+        (a, b) =>
+            new Date(b.date)
+            -
+            new Date(a.date)
+    );
+
+
+    if (!transactions.length) {
+
+        table.innerHTML = `
+            <tr>
+                <td colspan="7">
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            💸
+                        </div>
+                        <p>
+                            لا توجد عمليات.
+                        </p>
+                    </div>
+                </td>
+            </tr>
+        `;
+
+        return;
+
+    }
+
+
+    table.innerHTML =
+        transactions
+            .map(t => {
+
+                const category =
+                    data.categories.find(
+                        c =>
+                            c.id ===
+                            t.categoryId
+                    );
+
+
+                const account =
+                    data.accounts.find(
+                        a =>
+                            a.id ===
+                            t.accountId
+                    );
+
+
+                return `
+
+                    <tr>
+
+                        <td>
+                            ${formatDate(t.date)}
+                        </td>
+
+                        <td>
+
+                            ${
+                                t.type === "income"
+                                    ? '<span class="amount-income">دخل</span>'
+                                    : '<span class="amount-expense">مصروف</span>'
+                            }
+
+                        </td>
+
+                        <td>
+                            ${escapeHTML(
+                                t.description
+                            )}
+                        </td>
+
+                        <td>
+                            ${
+                                category
+                                    ? category.icon +
+                                      " " +
+                                      escapeHTML(category.name)
+                                    : "-"
+                            }
+                        </td>
+
+                        <td>
+                            ${
+                                account
+                                    ? escapeHTML(account.name)
+                                    : "-"
+                            }
+                        </td>
+
+                        <td class="
+                            ${
+                                t.type === "income"
+                                    ? "amount-income"
+                                    : "amount-expense"
+                            }
+                        ">
+
+                            ${
+                                t.type === "income"
+                                    ? "+"
+                                    : "-"
+                            }
+
+                            ${money(t.amount)}
+                            د.أ
+
+                        </td>
+
+                        <td>
+
+                            <div class="action-buttons">
+
+                                <button
+                                    class="small-btn"
+                                    onclick="editTransaction('${t.id}')"
+                                >
+                                    ✏️
+                                </button>
+
+                                <button
+                                    class="small-btn delete"
+                                    onclick="deleteTransaction('${t.id}')"
+                                >
+                                    🗑️
+                                </button>
+
+                            </div>
+
+                        </td>
+
+                    </tr>
+
+                `;
+
+            })
+            .join("");
+
+}
+
+
+/* =========================================================
+   POPULATE CATEGORIES
+========================================================= */
+
+function populateCategories() {
+
+    const transactionCategory =
+        document.getElementById(
+            "transactionCategory"
+        );
+
+
+    const filter =
+        document.getElementById(
+            "transactionCategoryFilter"
+        );
+
+
+    if (transactionCategory) {
+
+        const current =
+            transactionCategory.value;
+
+
+        transactionCategory.innerHTML =
+            data.categories
+                .map(c => `
+                    <option value="${c.id}">
+                        ${c.icon} ${escapeHTML(c.name)}
+                    </option>
+                `)
+                .join("");
+
+
+        if (current) {
+
+            transactionCategory.value =
+                current;
+
+        }
+
+    }
+
+
+    if (filter) {
+
+        const current =
+            filter.value;
+
+
+        filter.innerHTML = `
+            <option value="all">
+                كل التصنيفات
+            </option>
+        `;
+
+        filter.innerHTML +=
+            data.categories
+                .filter(
+                    c =>
+                        c.type === "expense"
+                )
+                .map(c => `
+                    <option value="${c.id}">
+                        ${c.icon} ${escapeHTML(c.name)}
+                    </option>
+                `)
+                .join("");
+
+
+        if (current) {
+
+            filter.value =
+                current;
+
+        }
+
+    }
+
+}
+
+
+/* =========================================================
+   POPULATE ACCOUNTS
+========================================================= */
+
+function populateAccounts() {
+
+    const select =
+        document.getElementById(
+            "transactionAccount"
+        );
+
+
+    if (!select) return;
+
+
+    const current =
+        select.value;
+
+
+    select.innerHTML =
+        data.accounts
+            .map(a => `
+                <option value="${a.id}">
+                    ${getAccountIcon(a.type)}
+                    ${escapeHTML(a.name)}
+                </option>
+            `)
+            .join("");
+
+
+    if (current) {
+
+        select.value = current;
+
+    }
+
+}
+
+
+function getAccountIcon(type) {
+
+    const icons = {
+
+        cash: "💵",
+
+        bank: "🏦",
+
+        wallet: "📱",
+
+        other: "💼"
+
+    };
+
+    return icons[type] || "💼";
+
+}
+
+
+/* =========================================================
+   OPEN TRANSACTION MODAL
+========================================================= */
+
+function openTransactionModal(type = "expense") {
+
+    const form =
+        document.getElementById(
+            "transactionForm"
+        );
+
+
+    form.reset();
+
+
+    document.getElementById(
+        "transactionId"
+    ).value = "";
+
+
+    document.getElementById(
+        "transactionDate"
+    ).value = today();
+
+
+    document.querySelector(
+        `input[name="transactionType"][value="${type}"]`
+    ).checked = true;
+
+
+    document.getElementById(
+        "transactionModalTitle"
+    ).textContent =
+        type === "income"
+            ? "إضافة دخل"
+            : "إضافة مصروف";
+
+
+    populateCategories();
+
+    populateAccounts();
+
+
+    // Select first matching category
+
+    const firstCategory =
+        data.categories.find(
+            c =>
+                c.type === type
+        );
+
+
+    if (firstCategory) {
+
+        document.getElementById(
+            "transactionCategory"
+        ).value =
+            firstCategory.id;
+
+    }
+
+
+    openModal(
+        "transactionModal"
+    );
+
 }
 
 
 /* =========================================================
    SAVE TRANSACTION
-   ========================================================= */
+========================================================= */
 
 function saveTransaction(event) {
 
     event.preventDefault();
 
+
     const id =
-        document.getElementById("transactionId").value;
+        document.getElementById(
+            "transactionId"
+        ).value;
+
+
+    const type =
+        document.querySelector(
+            'input[name="transactionType"]:checked'
+        ).value;
+
 
     const transaction = {
 
-        id: id || generateId(),
+        id:
+            id || generateId(),
 
-        type:
-            document.getElementById("transactionType").value,
+        type,
 
         amount:
-            Number(document.getElementById("transactionAmount").value),
+            Number(
+                document.getElementById(
+                    "transactionAmount"
+                ).value
+            ),
 
-        title:
-            document.getElementById("transactionTitle").value.trim(),
+        description:
+            document.getElementById(
+                "transactionDescription"
+            ).value.trim(),
 
-        category:
-            document.getElementById("transactionCategory").value,
+        categoryId:
+            document.getElementById(
+                "transactionCategory"
+            ).value,
+
+        accountId:
+            document.getElementById(
+                "transactionAccount"
+            ).value,
 
         date:
-            document.getElementById("transactionDate").value,
+            document.getElementById(
+                "transactionDate"
+            ).value,
 
         note:
-            document.getElementById("transactionNote").value.trim(),
+            document.getElementById(
+                "transactionNote"
+            ).value.trim()
 
-        createdAt:
-            new Date().toISOString()
     };
 
 
-    if (!transaction.amount || transaction.amount <= 0) {
+    if (
+        !transaction.amount
+        ||
+        transaction.amount <= 0
+        ||
+        !transaction.description
+    ) {
 
-        showToast("أدخل مبلغًا صحيحًا");
+        showToast(
+            "يرجى إدخال البيانات المطلوبة",
+            "⚠️"
+        );
 
         return;
-    }
 
-
-    if (!transaction.title) {
-
-        showToast("أدخل وصف العملية");
-
-        return;
     }
 
 
     if (id) {
 
         const index =
-            data.transactions.findIndex(item => item.id === id);
+            data.transactions.findIndex(
+                t => t.id === id
+            );
+
 
         if (index !== -1) {
 
-            data.transactions[index] = transaction;
+            data.transactions[index] =
+                transaction;
+
         }
 
     } else {
 
-        data.transactions.push(transaction);
+        data.transactions.push(
+            transaction
+        );
+
     }
 
 
     saveData();
 
-    closeModal("transactionModal");
+    closeModal(
+        "transactionModal"
+    );
 
     renderAll();
 
@@ -377,177 +1727,117 @@ function saveTransaction(event) {
             ? "تم تعديل العملية"
             : "تمت إضافة العملية"
     );
+
 }
 
 
 /* =========================================================
-   TRANSACTIONS RENDER
-   ========================================================= */
+   EDIT TRANSACTION
+========================================================= */
 
-function renderTransactions() {
+function editTransaction(id) {
 
-    const container =
-        document.getElementById("transactionsList");
-
-    if (!container) {
-        return;
-    }
-
-    const search =
-        document.getElementById("transactionSearch")
-            ?.value
-            .trim()
-            .toLowerCase() || "";
-
-    const filter =
-        document.getElementById("transactionFilter")
-            ?.value || "all";
+    const transaction =
+        data.transactions.find(
+            t => t.id === id
+        );
 
 
-    let transactions =
-        [...data.transactions];
+    if (!transaction) return;
 
 
-    if (filter !== "all") {
-
-        transactions =
-            transactions.filter(
-                item => item.type === filter
-            );
-    }
+    document.getElementById(
+        "transactionId"
+    ).value =
+        transaction.id;
 
 
-    if (search) {
-
-        transactions =
-            transactions.filter(item => {
-
-                const text = `
-                    ${item.title}
-                    ${item.category}
-                    ${item.note || ""}
-                `.toLowerCase();
-
-                return text.includes(search);
-            });
-    }
+    document.querySelector(
+        `input[name="transactionType"][value="${transaction.type}"]`
+    ).checked = true;
 
 
-    transactions.sort(
-        (a, b) => b.date.localeCompare(a.date)
+    document.getElementById(
+        "transactionAmount"
+    ).value =
+        transaction.amount;
+
+
+    document.getElementById(
+        "transactionDescription"
+    ).value =
+        transaction.description;
+
+
+    populateCategories();
+
+    populateAccounts();
+
+
+    document.getElementById(
+        "transactionCategory"
+    ).value =
+        transaction.categoryId;
+
+
+    document.getElementById(
+        "transactionAccount"
+    ).value =
+        transaction.accountId;
+
+
+    document.getElementById(
+        "transactionDate"
+    ).value =
+        transaction.date;
+
+
+    document.getElementById(
+        "transactionNote"
+    ).value =
+        transaction.note || "";
+
+
+    document.getElementById(
+        "transactionModalTitle"
+    ).textContent =
+        "تعديل العملية";
+
+
+    openModal(
+        "transactionModal"
     );
 
-
-    if (!transactions.length) {
-
-        container.innerHTML =
-            `<div class="empty">لا توجد عمليات.</div>`;
-
-        return;
-    }
-
-
-    container.innerHTML =
-        transactions.map(createTransactionHTML).join("");
-}
-
-
-function createTransactionHTML(transaction) {
-
-    const isIncome =
-        transaction.type === "income";
-
-    const sign =
-        isIncome ? "+" : "-";
-
-    const icon =
-        isIncome ? "📥" : "📤";
-
-    return `
-
-        <div class="transaction-item">
-
-            <div class="item-info">
-
-                <div class="item-title">
-                    ${icon}
-                    ${escapeHTML(transaction.title)}
-                </div>
-
-                <div class="item-meta">
-                    ${escapeHTML(transaction.category)}
-                    •
-                    ${formatDate(transaction.date)}
-                </div>
-
-                ${
-                    transaction.note
-                        ? `
-                        <div class="item-meta">
-                            ${escapeHTML(transaction.note)}
-                        </div>
-                        `
-                        : ""
-                }
-
-                <div class="item-actions">
-
-                    <button
-                        class="small-btn"
-                        onclick="openTransactionModal(
-                            '${transaction.type}',
-                            '${transaction.id}'
-                        )">
-                        ✏️ تعديل
-                    </button>
-
-                    <button
-                        class="small-btn delete-btn"
-                        onclick="deleteTransaction('${transaction.id}')">
-                        🗑 حذف
-                    </button>
-
-                </div>
-
-            </div>
-
-            <div class="amount ${transaction.type}">
-                ${sign}${formatMoney(transaction.amount)}
-            </div>
-
-        </div>
-    `;
 }
 
 
 /* =========================================================
    DELETE TRANSACTION
-   ========================================================= */
+========================================================= */
 
 function deleteTransaction(id) {
 
     const transaction =
-        data.transactions.find(item => item.id === id);
+        data.transactions.find(
+            t => t.id === id
+        );
 
-    if (!transaction) {
-        return;
-    }
+
+    if (!transaction) return;
 
 
     const confirmed =
         confirm(
-            `هل تريد حذف العملية "${transaction.title}"؟`
+            `هل تريد حذف العملية "${transaction.description}"؟`
         );
 
 
-    if (!confirmed) {
-        return;
-    }
+    if (!confirmed) return;
 
 
     data.transactions =
         data.transactions.filter(
-            item => item.id !== id
+            t => t.id !== id
         );
 
 
@@ -555,169 +1845,403 @@ function deleteTransaction(id) {
 
     renderAll();
 
-    showToast("تم حذف العملية");
+    showToast(
+        "تم حذف العملية",
+        "🗑️"
+    );
+
 }
 
 
 /* =========================================================
-   DEBT MODAL
-   ========================================================= */
+   DEBTS
+========================================================= */
 
-function openDebtModal(type = "owedToMe", id = null) {
-
-    const modal =
-        document.getElementById("debtModal");
-
-    document.getElementById("debtForm").reset();
-
-    document.getElementById("debtDate").value = today();
-
-    document.getElementById("debtId").value = "";
-
-    document.getElementById("debtModalTitle").textContent =
-        id ? "تعديل الدين" : "إضافة دين";
+let currentDebtFilter = "all";
 
 
-    selectDebtType(type);
+function renderDebts(
+    filter = currentDebtFilter
+) {
+
+    currentDebtFilter = filter;
 
 
-    if (id) {
-
-        const debt =
-            data.debts.find(item => item.id === id);
-
-        if (!debt) {
-            return;
-        }
+    const container =
+        document.getElementById(
+            "debtsContainer"
+        );
 
 
-        document.getElementById("debtId").value =
-            debt.id;
+    const receivable =
+        calculateDebt(
+            "receivable"
+        );
 
-        document.getElementById("debtPerson").value =
-            debt.person;
 
-        document.getElementById("debtAmount").value =
-            debt.amount;
+    const payable =
+        calculateDebt(
+            "payable"
+        );
 
-        document.getElementById("debtDate").value =
-            debt.date;
 
-        document.getElementById("debtDueDate").value =
-            debt.dueDate || "";
+    document.getElementById(
+        "debtReceivableSummary"
+    ).textContent =
+        money(receivable) + " د.أ";
 
-        document.getElementById("debtNote").value =
-            debt.note || "";
 
-        selectDebtType(debt.type);
+    document.getElementById(
+        "debtPayableSummary"
+    ).textContent =
+        money(payable) + " د.أ";
+
+
+    document.getElementById(
+        "debtNetSummary"
+    ).textContent =
+        money(
+            receivable - payable
+        ) + " د.أ";
+
+
+    let debts =
+        [...data.debts];
+
+
+    if (filter !== "all") {
+
+        debts =
+            debts.filter(
+                d =>
+                    d.type === filter
+            );
+
     }
 
 
-    modal.classList.add("show");
+    if (!debts.length) {
+
+        container.innerHTML = `
+
+            <div class="card">
+
+                <div class="empty-state">
+
+                    <div class="empty-icon">
+                        👥
+                    </div>
+
+                    <p>
+                        لا توجد ديون مسجلة.
+                    </p>
+
+                </div>
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    container.innerHTML =
+        debts
+            .map(renderDebtCard)
+            .join("");
+
 }
 
 
-function selectDebtType(type) {
+function renderDebtCard(debt) {
 
-    document.getElementById("debtType").value = type;
+    const remaining =
+        Math.max(
+            Number(debt.amount)
+            -
+            Number(debt.paid || 0),
+            0
+        );
 
-    const owedBtn =
-        document.getElementById("owedToMeBtn");
 
-    const oweBtn =
-        document.getElementById("iOweBtn");
+    const percentage =
+        debt.amount > 0
+            ? Math.min(
+                (
+                    Number(debt.paid || 0)
+                    /
+                    Number(debt.amount)
+                ) * 100,
+                100
+            )
+            : 0;
 
 
-    owedBtn.classList.remove(
-        "active-income",
-        "active-expense"
+    const isReceivable =
+        debt.type === "receivable";
+
+
+    return `
+
+        <div class="
+            debt-card
+            ${isReceivable ? "receivable" : "payable"}
+        ">
+
+            <div class="debt-card-header">
+
+                <div class="debt-person">
+
+                    <div class="person-avatar">
+                        👤
+                    </div>
+
+                    <div>
+
+                        <h4>
+                            ${escapeHTML(debt.person)}
+                        </h4>
+
+                        <span>
+                            ${
+                                isReceivable
+                                    ? "إلك عنده"
+                                    : "عليك له"
+                            }
+                        </span>
+
+                    </div>
+
+                </div>
+
+                <button
+                    class="small-btn"
+                    onclick="deleteDebt('${debt.id}')"
+                >
+                    🗑️
+                </button>
+
+            </div>
+
+
+            <div class="debt-amount">
+                ${money(remaining)} د.أ
+            </div>
+
+            <div class="debt-meta">
+
+                الأصلي:
+                ${money(debt.amount)}
+                د.أ
+
+                <br>
+
+                المدفوع:
+                ${money(debt.paid || 0)}
+                د.أ
+
+            </div>
+
+
+            <div class="progress" style="margin-top:15px">
+
+                <div
+                    class="progress-bar"
+                    style="width:${percentage}%"
+                ></div>
+
+            </div>
+
+
+            <div class="debt-meta" style="margin-top:10px">
+
+                ${
+                    debt.dueDate
+                        ? "الاستحقاق: " +
+                          formatDate(debt.dueDate)
+                        : "بدون موعد استحقاق"
+                }
+
+            </div>
+
+
+            <div class="debt-actions">
+
+                ${
+                    remaining > 0
+                        ? `
+                            <button
+                                class="primary-btn"
+                                onclick="payDebt('${debt.id}')"
+                            >
+                                💰 تسجيل دفعة
+                            </button>
+                        `
+                        : `
+                            <button
+                                class="secondary-btn"
+                                disabled
+                            >
+                                ✓ مكتمل
+                            </button>
+                        `
+                }
+
+            </div>
+
+        </div>
+
+    `;
+
+}
+
+
+/* =========================================================
+   OPEN DEBT MODAL
+========================================================= */
+
+function openDebtModal(
+    type = "receivable"
+) {
+
+    document
+        .getElementById("debtForm")
+        .reset();
+
+
+    document.getElementById(
+        "debtId"
+    ).value = "";
+
+
+    document.getElementById(
+        "debtDate"
+    ).value = today();
+
+
+    document.querySelector(
+        `input[name="debtType"][value="${type}"]`
+    ).checked = true;
+
+
+    document.getElementById(
+        "debtModalTitle"
+    ).textContent =
+        type === "receivable"
+            ? "إضافة دين إلي"
+            : "إضافة دين علي";
+
+
+    openModal(
+        "debtModal"
     );
 
-    oweBtn.classList.remove(
-        "active-income",
-        "active-expense"
-    );
-
-
-    if (type === "owedToMe") {
-
-        owedBtn.classList.add("active-income");
-
-    } else {
-
-        oweBtn.classList.add("active-expense");
-    }
 }
 
 
 /* =========================================================
    SAVE DEBT
-   ========================================================= */
+========================================================= */
 
 function saveDebt(event) {
 
     event.preventDefault();
 
+
     const id =
-        document.getElementById("debtId").value;
+        document.getElementById(
+            "debtId"
+        ).value;
 
 
     const debt = {
 
-        id: id || generateId(),
+        id:
+            id || generateId(),
 
         type:
-            document.getElementById("debtType").value,
+            document.querySelector(
+                'input[name="debtType"]:checked'
+            ).value,
 
         person:
-            document.getElementById("debtPerson").value.trim(),
+            document.getElementById(
+                "debtPerson"
+            ).value.trim(),
 
         amount:
-            Number(document.getElementById("debtAmount").value),
+            Number(
+                document.getElementById(
+                    "debtAmount"
+                ).value
+            ),
+
+        paid: 0,
 
         date:
-            document.getElementById("debtDate").value,
+            document.getElementById(
+                "debtDate"
+            ).value,
 
         dueDate:
-            document.getElementById("debtDueDate").value,
+            document.getElementById(
+                "debtDueDate"
+            ).value,
 
         note:
-            document.getElementById("debtNote").value.trim(),
+            document.getElementById(
+                "debtNote"
+            ).value.trim(),
 
-        createdAt:
-            new Date().toISOString()
+        status:
+            "active"
+
     };
 
 
-    if (!debt.person) {
+    if (
+        !debt.person
+        ||
+        !debt.amount
+        ||
+        debt.amount <= 0
+    ) {
 
-        showToast("أدخل اسم الشخص");
+        showToast(
+            "يرجى إدخال اسم الشخص والمبلغ",
+            "⚠️"
+        );
 
         return;
-    }
 
-
-    if (!debt.amount || debt.amount <= 0) {
-
-        showToast("أدخل مبلغًا صحيحًا");
-
-        return;
     }
 
 
     if (id) {
 
-        const index =
-            data.debts.findIndex(item => item.id === id);
+        const old =
+            data.debts.find(
+                d => d.id === id
+            );
 
-        if (index !== -1) {
 
-            data.debts[index] = debt;
+        if (old) {
+
+            debt.paid =
+                old.paid || 0;
+
+            data.debts[
+                data.debts.indexOf(old)
+            ] = debt;
+
         }
 
     } else {
 
         data.debts.push(debt);
+
     }
 
 
@@ -732,194 +2256,122 @@ function saveDebt(event) {
             ? "تم تعديل الدين"
             : "تمت إضافة الدين"
     );
+
 }
 
 
 /* =========================================================
-   DEBTS RENDER
-   ========================================================= */
+   PAY DEBT
+========================================================= */
 
-function renderDebts() {
+function payDebt(id) {
 
-    const container =
-        document.getElementById("debtsList");
+    const debt =
+        data.debts.find(
+            d => d.id === id
+        );
 
-    if (!container) {
+
+    if (!debt) return;
+
+
+    const remaining =
+        Number(debt.amount)
+        -
+        Number(debt.paid || 0);
+
+
+    const value =
+        prompt(
+            `المتبقي: ${money(remaining)} د.أ\n\nكم تريد تسجيل كدفعة؟`
+        );
+
+
+    if (value === null) return;
+
+
+    const payment =
+        Number(value);
+
+
+    if (
+        !payment
+        ||
+        payment <= 0
+        ||
+        payment > remaining
+    ) {
+
+        alert(
+            "قيمة الدفعة غير صحيحة."
+        );
+
         return;
+
     }
 
 
-    let debts =
-        [...data.debts];
+    debt.paid =
+        Number(debt.paid || 0)
+        +
+        payment;
 
 
-    if (currentDebtTab !== "all") {
+    if (
+        debt.paid >=
+        Number(debt.amount)
+    ) {
 
-        debts =
-            debts.filter(
-                debt => debt.type === currentDebtTab
-            );
+        debt.paid =
+            Number(debt.amount);
+
+        debt.status =
+            "paid";
+
     }
 
 
-    debts.sort(
-        (a, b) => b.date.localeCompare(a.date)
+    saveData();
+
+    renderAll();
+
+    showToast(
+        "تم تسجيل الدفعة",
+        "💰"
     );
 
-
-    if (!debts.length) {
-
-        container.innerHTML =
-            `<div class="empty">لا توجد ديون.</div>`;
-
-        return;
-    }
-
-
-    container.innerHTML =
-        debts.map(createDebtHTML).join("");
-}
-
-
-function createDebtHTML(debt) {
-
-    const isOwedToMe =
-        debt.type === "owedToMe";
-
-    const icon =
-        isOwedToMe ? "👤" : "💳";
-
-    const label =
-        isOwedToMe
-            ? "لك عنده"
-            : "عليك له";
-
-
-    let overdue = false;
-
-    if (debt.dueDate) {
-
-        overdue =
-            debt.dueDate < today();
-    }
-
-
-    return `
-
-        <div class="debt-item">
-
-            <div class="item-info">
-
-                <div class="item-title">
-                    ${icon}
-                    ${escapeHTML(debt.person)}
-                </div>
-
-                <div class="item-meta">
-                    ${label}
-                    •
-                    ${formatDate(debt.date)}
-                </div>
-
-                ${
-                    debt.dueDate
-                        ? `
-                        <div class="item-meta ${
-                            overdue ? "overdue" : ""
-                        }">
-                            الاستحقاق:
-                            ${formatDate(debt.dueDate)}
-                            ${overdue ? " • متأخر" : ""}
-                        </div>
-                        `
-                        : ""
-                }
-
-                ${
-                    debt.note
-                        ? `
-                        <div class="item-meta">
-                            ${escapeHTML(debt.note)}
-                        </div>
-                        `
-                        : ""
-                }
-
-                <div class="item-actions">
-
-                    <button
-                        class="small-btn"
-                        onclick="openDebtModal(
-                            '${debt.type}',
-                            '${debt.id}'
-                        )">
-                        ✏️ تعديل
-                    </button>
-
-                    <button
-                        class="small-btn"
-                        onclick="markDebtPaid('${debt.id}')">
-                        ✅ تم السداد
-                    </button>
-
-                    <button
-                        class="small-btn delete-btn"
-                        onclick="deleteDebt('${debt.id}')">
-                        🗑 حذف
-                    </button>
-
-                </div>
-
-            </div>
-
-            <div class="amount debt">
-                ${formatMoney(debt.amount)}
-            </div>
-
-        </div>
-    `;
-}
-
-
-/* =========================================================
-   DEBT TABS
-   ========================================================= */
-
-function setDebtTab(tab, button) {
-
-    currentDebtTab = tab;
-
-    document.querySelectorAll(".debt-tabs button")
-        .forEach(btn => btn.classList.remove("active"));
-
-    button.classList.add("active");
-
-    renderDebts();
 }
 
 
 /* =========================================================
    DELETE DEBT
-   ========================================================= */
+========================================================= */
 
 function deleteDebt(id) {
 
     const debt =
-        data.debts.find(item => item.id === id);
+        data.debts.find(
+            d => d.id === id
+        );
 
-    if (!debt) {
+
+    if (!debt) return;
+
+
+    if (
+        !confirm(
+            `هل تريد حذف دين ${debt.person}؟`
+        )
+    ) {
+
         return;
-    }
 
-
-    if (!confirm(`حذف دين ${debt.person}؟`)) {
-        return;
     }
 
 
     data.debts =
         data.debts.filter(
-            item => item.id !== id
+            d => d.id !== id
         );
 
 
@@ -927,518 +2379,851 @@ function deleteDebt(id) {
 
     renderAll();
 
-    showToast("تم حذف الدين");
+    showToast(
+        "تم حذف الدين",
+        "🗑️"
+    );
+
 }
 
 
 /* =========================================================
-   MARK DEBT PAID
-   ========================================================= */
+   ACCOUNTS
+========================================================= */
 
-function markDebtPaid(id) {
+function renderAccounts() {
 
-    const debt =
-        data.debts.find(item => item.id === id);
+    const container =
+        document.getElementById(
+            "accountsGrid"
+        );
 
-    if (!debt) {
+
+    if (!data.accounts.length) {
+
+        container.innerHTML = `
+            <div class="card">
+                <div class="empty-state">
+                    <div class="empty-icon">🏦</div>
+                    <p>لا توجد حسابات.</p>
+                </div>
+            </div>
+        `;
+
         return;
+
+    }
+
+
+    container.innerHTML =
+        data.accounts
+            .map(account => {
+
+                const balance =
+                    calculateAccountBalance(
+                        account.id
+                    );
+
+
+                return `
+
+                    <div class="account-card">
+
+                        <div class="account-top">
+
+                            <div class="account-icon">
+                                ${getAccountIcon(account.type)}
+                            </div>
+
+                            <div class="action-buttons">
+
+                                <button
+                                    class="small-btn"
+                                    onclick="deleteAccount('${account.id}')"
+                                >
+                                    🗑️
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                        <div class="account-name">
+                            ${escapeHTML(account.name)}
+                        </div>
+
+                        <div class="account-type">
+                            ${getAccountTypeName(account.type)}
+                        </div>
+
+                        <div class="account-balance">
+                            ${money(balance)}
+                            <small>د.أ</small>
+                        </div>
+
+                    </div>
+
+                `;
+
+            })
+            .join("");
+
+}
+
+
+function calculateAccountBalance(accountId) {
+
+    const account =
+        data.accounts.find(
+            a => a.id === accountId
+        );
+
+
+    if (!account) return 0;
+
+
+    let balance =
+        Number(
+            account.initialBalance || 0
+        );
+
+
+    data.transactions
+        .filter(
+            t =>
+                t.accountId === accountId
+        )
+        .forEach(t => {
+
+            if (t.type === "income") {
+
+                balance +=
+                    Number(t.amount);
+
+            } else {
+
+                balance -=
+                    Number(t.amount);
+
+            }
+
+        });
+
+
+    return balance;
+
+}
+
+
+function getAccountTypeName(type) {
+
+    const names = {
+
+        cash: "نقدي",
+
+        bank: "حساب بنكي",
+
+        wallet: "محفظة إلكترونية",
+
+        other: "حساب آخر"
+
+    };
+
+    return names[type] || "أخرى";
+
+}
+
+
+/* =========================================================
+   ACCOUNT MODAL
+========================================================= */
+
+function openAccountModal() {
+
+    document
+        .getElementById("accountForm")
+        .reset();
+
+
+    document.getElementById(
+        "accountId"
+    ).value = "";
+
+
+    openModal(
+        "accountModal"
+    );
+
+}
+
+
+/* =========================================================
+   SAVE ACCOUNT
+========================================================= */
+
+function saveAccount(event) {
+
+    event.preventDefault();
+
+
+    const name =
+        document.getElementById(
+            "accountName"
+        ).value.trim();
+
+
+    const type =
+        document.getElementById(
+            "accountType"
+        ).value;
+
+
+    const initialBalance =
+        Number(
+            document.getElementById(
+                "accountInitialBalance"
+            ).value
+        );
+
+
+    if (!name) {
+
+        showToast(
+            "أدخل اسم الحساب",
+            "⚠️"
+        );
+
+        return;
+
+    }
+
+
+    data.accounts.push({
+
+        id: generateId(),
+
+        name,
+
+        type,
+
+        initialBalance:
+            initialBalance || 0
+
+    });
+
+
+    saveData();
+
+    closeModal("accountModal");
+
+    renderAll();
+
+    showToast(
+        "تمت إضافة الحساب"
+    );
+
+}
+
+
+/* =========================================================
+   DELETE ACCOUNT
+========================================================= */
+
+function deleteAccount(id) {
+
+    if (data.accounts.length <= 1) {
+
+        alert(
+            "يجب أن يبقى حساب واحد على الأقل."
+        );
+
+        return;
+
+    }
+
+
+    const hasTransactions =
+        data.transactions.some(
+            t =>
+                t.accountId === id
+        );
+
+
+    if (hasTransactions) {
+
+        alert(
+            "لا يمكن حذف حساب يحتوي على عمليات. احذف أو عدّل العمليات أولاً."
+        );
+
+        return;
+
     }
 
 
     if (
         !confirm(
-            `هل تم سداد الدين مع ${debt.person}؟`
+            "هل تريد حذف هذا الحساب؟"
         )
     ) {
+
         return;
+
     }
 
 
-    data.debts =
-        data.debts.filter(
-            item => item.id !== id
+    data.accounts =
+        data.accounts.filter(
+            a => a.id !== id
         );
-
-
-    /*
-       تسجيل حركة مالية تلقائيًا:
-
-       إذا كان الشخص مدينًا لك:
-       استلام المال = دخل
-
-       إذا كنت مدينًا للشخص:
-       دفع المال = مصروف
-    */
-
-    data.transactions.push({
-
-        id: generateId(),
-
-        type:
-            debt.type === "owedToMe"
-                ? "income"
-                : "expense",
-
-        amount:
-            debt.amount,
-
-        title:
-            debt.type === "owedToMe"
-                ? `تحصيل دين من ${debt.person}`
-                : `سداد دين لـ ${debt.person}`,
-
-        category: "ديون",
-
-        date: today(),
-
-        note:
-            "تم تسجيل العملية تلقائيًا عند سداد الدين",
-
-        createdAt:
-            new Date().toISOString()
-    });
 
 
     saveData();
 
     renderAll();
 
-    showToast("تم تسجيل السداد");
+    showToast(
+        "تم حذف الحساب",
+        "🗑️"
+    );
+
 }
 
 
 /* =========================================================
-   DASHBOARD
-   ========================================================= */
+   REPORTS INITIALIZATION
+========================================================= */
 
-function renderDashboard() {
+function initializeReports() {
+
+    const monthSelect =
+        document.getElementById(
+            "reportMonth"
+        );
+
+
+    const yearSelect =
+        document.getElementById(
+            "reportYear"
+        );
+
+
+    if (!monthSelect || !yearSelect)
+        return;
+
+
+    const months = [
+
+        "يناير",
+        "فبراير",
+        "مارس",
+        "أبريل",
+        "مايو",
+        "يونيو",
+        "يوليو",
+        "أغسطس",
+        "سبتمبر",
+        "أكتوبر",
+        "نوفمبر",
+        "ديسمبر"
+
+    ];
+
+
+    monthSelect.innerHTML =
+        months
+            .map(
+                (month, index) => `
+                    <option value="${index}">
+                        ${month}
+                    </option>
+                `
+            )
+            .join("");
+
+
+    monthSelect.value =
+        currentMonth();
+
+
+    const years = new Set();
+
+    years.add(currentYear());
+
+
+    data.transactions.forEach(t => {
+
+        if (t.date) {
+
+            years.add(
+                new Date(
+                    t.date + "T00:00:00"
+                ).getFullYear()
+            );
+
+        }
+
+    });
+
+
+    yearSelect.innerHTML =
+        [...years]
+            .sort(
+                (a,b) => b-a
+            )
+            .map(
+                year => `
+                    <option value="${year}">
+                        ${year}
+                    </option>
+                `
+            )
+            .join("");
+
+
+    yearSelect.value =
+        currentYear();
+
+}
+
+
+/* =========================================================
+   REPORTS
+========================================================= */
+
+let reportCategoryChart = null;
+
+let incomeExpenseChart = null;
+
+
+function renderReports() {
+
+    const month =
+        Number(
+            document.getElementById(
+                "reportMonth"
+            )?.value
+        );
+
+
+    const year =
+        Number(
+            document.getElementById(
+                "reportYear"
+            )?.value
+        );
+
+
+    if (
+        Number.isNaN(month)
+        ||
+        Number.isNaN(year)
+    ) {
+
+        return;
+
+    }
+
+
+    const transactions =
+        data.transactions.filter(t => {
+
+            const date =
+                new Date(
+                    t.date + "T00:00:00"
+                );
+
+            return (
+                date.getMonth() === month
+                &&
+                date.getFullYear() === year
+            );
+
+        });
+
 
     const income =
-        data.transactions
-            .filter(item => item.type === "income")
+        transactions
+            .filter(
+                t =>
+                    t.type === "income"
+            )
             .reduce(
-                (sum, item) => sum + Number(item.amount),
+                (sum,t) =>
+                    sum + Number(t.amount),
                 0
             );
 
 
     const expense =
-        data.transactions
-            .filter(item => item.type === "expense")
-            .reduce(
-                (sum, item) => sum + Number(item.amount),
-                0
-            );
-
-
-    const balance =
-        income - expense;
-
-
-    const owedToMe =
-        data.debts
-            .filter(item => item.type === "owedToMe")
-            .reduce(
-                (sum, item) => sum + Number(item.amount),
-                0
-            );
-
-
-    const iOwe =
-        data.debts
-            .filter(item => item.type === "iOwe")
-            .reduce(
-                (sum, item) => sum + Number(item.amount),
-                0
-            );
-
-
-    document.getElementById("currentBalance").textContent =
-        formatMoney(balance);
-
-    document.getElementById("totalIncome").textContent =
-        formatMoney(income);
-
-    document.getElementById("totalExpense").textContent =
-        formatMoney(expense);
-
-    document.getElementById("owedToMeTotal").textContent =
-        formatMoney(owedToMe);
-
-    document.getElementById("iOweTotal").textContent =
-        formatMoney(iOwe);
-
-
-    const recent =
-        [...data.transactions]
-            .sort(
-                (a, b) => b.date.localeCompare(a.date)
-            )
-            .slice(0, 5);
-
-
-    const container =
-        document.getElementById("recentTransactions");
-
-
-    if (!recent.length) {
-
-        container.innerHTML =
-            `<div class="empty">لا توجد عمليات حتى الآن.</div>`;
-
-    } else {
-
-        container.innerHTML =
-            recent.map(createTransactionHTML).join("");
-    }
-}
-
-
-/* =========================================================
-   STATISTICS
-   ========================================================= */
-
-function renderStatistics() {
-
-    const transactions =
-        data.transactions;
-
-
-    const expenses =
-        transactions.filter(
-            item => item.type === "expense"
-        );
-
-
-    const totalIncome =
         transactions
-            .filter(item => item.type === "income")
-            .reduce(
-                (sum, item) => sum + Number(item.amount),
-                0
-            );
-
-
-    const totalExpense =
-        expenses.reduce(
-            (sum, item) => sum + Number(item.amount),
-            0
-        );
-
-
-    const averageExpense =
-        expenses.length
-            ? totalExpense / expenses.length
-            : 0;
-
-
-    const largestExpense =
-        expenses.length
-            ? Math.max(
-                ...expenses.map(
-                    item => Number(item.amount)
-                )
+            .filter(
+                t =>
+                    t.type === "expense"
             )
-            : 0;
-
-
-    document.getElementById("statTransactions")
-        .textContent = transactions.length;
-
-
-    document.getElementById("statAverageExpense")
-        .textContent = formatMoney(averageExpense);
-
-
-    document.getElementById("statLargestExpense")
-        .textContent = formatMoney(largestExpense);
-
-
-    document.getElementById("statNet")
-        .textContent =
-            formatMoney(totalIncome - totalExpense);
-
-
-    renderCategoryStats(expenses);
-
-    renderMonthlyStats(expenses);
-}
-
-
-function renderCategoryStats(expenses) {
-
-    const container =
-        document.getElementById("categoryStats");
-
-
-    const categories = {};
-
-
-    expenses.forEach(item => {
-
-        categories[item.category] =
-            (categories[item.category] || 0)
-            + Number(item.amount);
-    });
-
-
-    const entries =
-        Object.entries(categories)
-            .sort((a, b) => b[1] - a[1]);
-
-
-    if (!entries.length) {
-
-        container.innerHTML =
-            `<div class="empty">لا توجد مصروفات.</div>`;
-
-        return;
-    }
-
-
-    const max =
-        Math.max(...entries.map(item => item[1]));
-
-
-    container.innerHTML =
-        entries.map(([category, amount]) => {
-
-            const percentage =
-                max
-                    ? (amount / max) * 100
-                    : 0;
-
-
-            return `
-
-                <div class="stat-row">
-
-                    <div class="stat-row-head">
-
-                        <span>
-                            ${escapeHTML(category)}
-                        </span>
-
-                        <strong>
-                            ${formatMoney(amount)}
-                        </strong>
-
-                    </div>
-
-                    <div class="progress">
-                        <div
-                            class="progress-bar"
-                            style="width:${percentage}%">
-                        </div>
-                    </div>
-
-                </div>
-            `;
-
-        }).join("");
-}
-
-
-function renderMonthlyStats(expenses) {
-
-    const container =
-        document.getElementById("monthlyStats");
-
-
-    const months = {};
-
-
-    expenses.forEach(item => {
-
-        const month =
-            item.date.slice(0, 7);
-
-        months[month] =
-            (months[month] || 0)
-            + Number(item.amount);
-    });
-
-
-    const entries =
-        Object.entries(months)
-            .sort((a, b) => b[0].localeCompare(a[0]))
-            .slice(0, 12);
-
-
-    if (!entries.length) {
-
-        container.innerHTML =
-            `<div class="empty">لا توجد بيانات.</div>`;
-
-        return;
-    }
-
-
-    const max =
-        Math.max(...entries.map(item => item[1]));
-
-
-    container.innerHTML =
-        entries.map(([month, amount]) => {
-
-            const percentage =
-                max
-                    ? (amount / max) * 100
-                    : 0;
-
-
-            return `
-
-                <div class="stat-row">
-
-                    <div class="stat-row-head">
-
-                        <span>
-                            ${formatMonth(month)}
-                        </span>
-
-                        <strong>
-                            ${formatMoney(amount)}
-                        </strong>
-
-                    </div>
-
-                    <div class="progress">
-                        <div
-                            class="progress-bar"
-                            style="width:${percentage}%">
-                        </div>
-                    </div>
-
-                </div>
-            `;
-
-        }).join("");
-}
-
-
-function formatMonth(value) {
-
-    const date =
-        new Date(value + "-01T00:00:00");
-
-    return date.toLocaleDateString("ar-JO", {
-        year: "numeric",
-        month: "long"
-    });
-}
-
-
-/* =========================================================
-   DEBT SUMMARY
-   ========================================================= */
-
-function renderDebtSummary() {
-
-    const owedToMe =
-        data.debts
-            .filter(item => item.type === "owedToMe")
             .reduce(
-                (sum, item) => sum + Number(item.amount),
+                (sum,t) =>
+                    sum + Number(t.amount),
                 0
             );
 
 
-    const iOwe =
-        data.debts
-            .filter(item => item.type === "iOwe")
-            .reduce(
-                (sum, item) => sum + Number(item.amount),
-                0
-            );
+    document.getElementById(
+        "reportIncome"
+    ).textContent =
+        money(income) + " د.أ";
 
 
-    document.getElementById("debtsPageOwedToMe")
-        .textContent = formatMoney(owedToMe);
+    document.getElementById(
+        "reportExpense"
+    ).textContent =
+        money(expense) + " د.أ";
 
 
-    document.getElementById("debtsPageIOwe")
-        .textContent = formatMoney(iOwe);
-}
+    document.getElementById(
+        "reportDifference"
+    ).textContent =
+        money(
+            income - expense
+        ) + " د.أ";
 
 
-/* =========================================================
-   SETTINGS
-   ========================================================= */
-
-function renderSettings() {
-
-    const select =
-        document.getElementById("currencySelect");
-
-    if (select) {
-
-        select.value =
-            data.settings.currency;
-    }
-}
-
-
-function changeCurrency() {
-
-    data.settings.currency =
-        document.getElementById("currencySelect").value;
-
-    saveData();
-
-    renderAll();
-
-    showToast("تم تغيير العملة");
-}
-
-
-/* =========================================================
-   THEME
-   ========================================================= */
-
-function applyTheme() {
-
-    document.body.classList.toggle(
-        "dark",
-        data.settings.darkMode
+    renderReportCategoryChart(
+        transactions
     );
 
 
-    document.getElementById("themeBtn").textContent =
-        data.settings.darkMode
-            ? "☀️"
-            : "🌙";
+    renderIncomeExpenseChart(
+        income,
+        expense
+    );
+
+
+    renderCategoryReportList(
+        transactions
+    );
+
 }
 
 
-document.getElementById("themeBtn")
-    .addEventListener("click", () => {
+/* =========================================================
+   REPORT CATEGORY CHART
+========================================================= */
 
-        data.settings.darkMode =
-            !data.settings.darkMode;
+function renderReportCategoryChart(
+    transactions
+) {
 
-        saveData();
+    const canvas =
+        document.getElementById(
+            "reportCategoryChart"
+        );
 
-        applyTheme();
-    });
+
+    if (!canvas) return;
+
+
+    const totals = {};
+
+
+    transactions
+        .filter(
+            t =>
+                t.type === "expense"
+        )
+        .forEach(t => {
+
+            const category =
+                data.categories.find(
+                    c =>
+                        c.id ===
+                        t.categoryId
+                );
+
+
+            const name =
+                category?.name ||
+                "أخرى";
+
+
+            totals[name] =
+                (totals[name] || 0)
+                +
+                Number(t.amount);
+
+        });
+
+
+    if (reportCategoryChart) {
+
+        reportCategoryChart.destroy();
+
+    }
+
+
+    reportCategoryChart =
+        new Chart(
+            canvas,
+            {
+
+                type: "pie",
+
+                data: {
+
+                    labels:
+                        Object.keys(totals),
+
+                    datasets: [
+                        {
+                            data:
+                                Object.values(totals)
+                        }
+                    ]
+
+                },
+
+                options: {
+
+                    responsive: true,
+
+                    maintainAspectRatio: false,
+
+                    plugins: {
+
+                        legend: {
+                            position: "bottom"
+                        }
+
+                    }
+
+                }
+
+            }
+        );
+
+}
 
 
 /* =========================================================
-   EXPORT
-   ========================================================= */
+   INCOME EXPENSE CHART
+========================================================= */
+
+function renderIncomeExpenseChart(
+    income,
+    expense
+) {
+
+    const canvas =
+        document.getElementById(
+            "incomeExpenseChart"
+        );
+
+
+    if (!canvas) return;
+
+
+    if (incomeExpenseChart) {
+
+        incomeExpenseChart.destroy();
+
+    }
+
+
+    incomeExpenseChart =
+        new Chart(
+            canvas,
+            {
+
+                type: "bar",
+
+                data: {
+
+                    labels: [
+                        "الدخل",
+                        "المصروف"
+                    ],
+
+                    datasets: [
+                        {
+                            label:
+                                "المبلغ",
+
+                            data: [
+                                income,
+                                expense
+                            ]
+                        }
+                    ]
+
+                },
+
+                options: {
+
+                    responsive: true,
+
+                    maintainAspectRatio: false,
+
+                    scales: {
+
+                        y: {
+                            beginAtZero: true
+                        }
+
+                    }
+
+                }
+
+            }
+        );
+
+}
+
+
+/* =========================================================
+   CATEGORY REPORT LIST
+========================================================= */
+
+function renderCategoryReportList(
+    transactions
+) {
+
+    const container =
+        document.getElementById(
+            "categoryReportList"
+        );
+
+
+    const totals = {};
+
+
+    transactions
+        .filter(
+            t =>
+                t.type === "expense"
+        )
+        .forEach(t => {
+
+            const category =
+                data.categories.find(
+                    c =>
+                        c.id ===
+                        t.categoryId
+                );
+
+
+            const id =
+                t.categoryId ||
+                "other";
+
+
+            if (!totals[id]) {
+
+                totals[id] = {
+
+                    name:
+                        category?.name ||
+                        "أخرى",
+
+                    icon:
+                        category?.icon ||
+                        "📦",
+
+                    amount: 0
+
+                };
+
+            }
+
+
+            totals[id].amount +=
+                Number(t.amount);
+
+        });
+
+
+    const list =
+        Object.values(totals)
+            .sort(
+                (a,b) =>
+                    b.amount - a.amount
+            );
+
+
+    if (!list.length) {
+
+        container.innerHTML = `
+            <div class="empty-state">
+                <p>لا توجد مصاريف لهذا الشهر.</p>
+            </div>
+        `;
+
+        return;
+
+    }
+
+
+    const max =
+        list[0].amount;
+
+
+    container.innerHTML =
+        list.map(item => {
+
+            const percentage =
+                max > 0
+                    ? (
+                        item.amount /
+                        max
+                    ) * 100
+                    : 0;
+
+
+            return `
+
+                <div class="category-report-row">
+
+                    <div>
+                        ${item.icon}
+                        ${escapeHTML(item.name)}
+                    </div>
+
+                    <div class="category-report-bar">
+
+                        <div
+                            style="width:${percentage}%"
+                        ></div>
+
+                    </div>
+
+                    <strong>
+                        ${money(item.amount)}
+                    </strong>
+
+                </div>
+
+            `;
+
+        }).join("");
+
+}
+
+
+/* =========================================================
+   EXPORT DATA
+========================================================= */
 
 function exportData() {
 
     const backup = {
 
-        app: "MohaBank",
+        app: "Money Manager",
 
-        version: "1.0.0",
+        version: 1,
 
         exportedAt:
             new Date().toISOString(),
 
-        data: data
+        data
+
     };
 
 
@@ -1454,40 +3239,55 @@ function exportData() {
         new Blob(
             [json],
             {
-                type: "application/json"
+                type:
+                    "application/json"
             }
         );
 
 
     const url =
-        URL.createObjectURL(blob);
+        URL.createObjectURL(
+            blob
+        );
 
 
-    const a =
-        document.createElement("a");
+    const link =
+        document.createElement(
+            "a"
+        );
 
 
     const date =
-        today();
+        new Date()
+            .toISOString()
+            .split("T")[0];
 
 
-    a.href = url;
+    link.href = url;
 
-    a.download =
-        `MohaBank-Backup-${date}.json`;
-
-    a.click();
+    link.download =
+        `money-manager-backup-${date}.json`;
 
 
-    URL.revokeObjectURL(url);
+    link.click();
 
-    showToast("تم تصدير النسخة الاحتياطية");
+
+    URL.revokeObjectURL(
+        url
+    );
+
+
+    showToast(
+        "تم تصدير بياناتك",
+        "📤"
+    );
+
 }
 
 
 /* =========================================================
-   IMPORT
-   ========================================================= */
+   IMPORT DATA
+========================================================= */
 
 function importData(event) {
 
@@ -1495,275 +3295,440 @@ function importData(event) {
         event.target.files[0];
 
 
-    if (!file) {
-        return;
-    }
+    if (!file) return;
 
 
     const reader =
         new FileReader();
 
 
-    reader.onload = function(e) {
+    reader.onload =
+        function(e) {
 
-        try {
+            try {
 
-            const backup =
-                JSON.parse(e.target.result);
-
-
-            let imported;
-
-
-            if (backup.data) {
-
-                imported = backup.data;
-
-            } else {
-
-                imported = backup;
-            }
+                const backup =
+                    JSON.parse(
+                        e.target.result
+                    );
 
 
-            if (
-                !Array.isArray(imported.transactions) ||
-                !Array.isArray(imported.debts)
-            ) {
+                if (
+                    !backup.data
+                    ||
+                    !Array.isArray(
+                        backup.data.transactions
+                    )
+                ) {
 
-                throw new Error(
-                    "Invalid backup"
-                );
-            }
+                    throw new Error(
+                        "Invalid backup"
+                    );
 
-
-            if (
-                !confirm(
-                    "استيراد النسخة سيستبدل البيانات الحالية. هل تريد المتابعة؟"
-                )
-            ) {
-                return;
-            }
-
-
-            data = {
-
-                transactions:
-                    imported.transactions,
-
-                debts:
-                    imported.debts,
-
-                settings: {
-
-                    currency:
-                        imported.settings?.currency || "JOD",
-
-                    darkMode:
-                        imported.settings?.darkMode || false
                 }
-            };
 
 
-            saveData();
-
-            applyTheme();
-
-            renderAll();
-
-            showToast("تم استيراد البيانات بنجاح");
+                const confirmed =
+                    confirm(
+                        "استيراد النسخة سيستبدل البيانات الحالية. هل أنت متأكد؟"
+                    );
 
 
-        } catch (error) {
+                if (!confirmed) {
 
-            console.error(error);
+                    event.target.value =
+                        "";
 
-            showToast("ملف النسخة الاحتياطية غير صالح");
-        }
-    };
+                    return;
+
+                }
+
+
+                data = {
+
+                    ...defaultData,
+
+                    ...backup.data
+
+                };
+
+
+                saveData();
+
+                renderAll();
+
+                showToast(
+                    "تم استيراد البيانات",
+                    "📥"
+                );
+
+
+            } catch(error) {
+
+                console.error(error);
+
+                alert(
+                    "ملف النسخة الاحتياطية غير صالح."
+                );
+
+            }
+
+            event.target.value =
+                "";
+
+        };
 
 
     reader.readAsText(file);
 
-    event.target.value = "";
 }
 
 
 /* =========================================================
-   DELETE EVERYTHING
-   ========================================================= */
+   SAVE BUDGET
+========================================================= */
 
-function deleteAllData() {
+function saveBudget() {
 
-    const confirmed =
-        confirm(
-            "تحذير!\n\nسيتم حذف جميع العمليات والديون نهائيًا.\n\nهل أنت متأكد؟"
+    const value =
+        Number(
+            document.getElementById(
+                "monthlyBudget"
+            ).value
         );
 
 
-    if (!confirmed) {
+    if (value < 0) {
+
+        showToast(
+            "الميزانية غير صحيحة",
+            "⚠️"
+        );
+
         return;
+
     }
 
 
-    const secondConfirm =
+    data.budget = value;
+
+
+    saveData();
+
+    renderBudget();
+
+    showToast(
+        "تم حفظ الميزانية"
+    );
+
+}
+
+
+/* =========================================================
+   CLEAR ALL DATA
+========================================================= */
+
+function clearAllData() {
+
+    const first =
         confirm(
-            "تأكيد أخير: هل تريد حذف كل بيانات MohaBank؟"
+            "⚠️ سيتم حذف جميع بياناتك. هل أنت متأكد؟"
         );
 
 
-    if (!secondConfirm) {
-        return;
-    }
+    if (!first) return;
 
 
-    data = {
+    const second =
+        confirm(
+            "تأكيد أخير: لا يمكن التراجع عن هذه العملية."
+        );
 
-        transactions: [],
 
-        debts: [],
+    if (!second) return;
 
-        settings: {
 
-            currency: "JOD",
+    localStorage.removeItem(
+        STORAGE_KEY
+    );
 
-            darkMode:
-                data.settings.darkMode
-        }
-    };
+
+    data =
+        JSON.parse(
+            JSON.stringify(defaultData)
+        );
 
 
     saveData();
 
     renderAll();
 
-    showToast("تم حذف جميع البيانات");
-}
-
-
-/* =========================================================
-   RENDER ALL
-   ========================================================= */
-
-function renderAll() {
-
-    renderDashboard();
-
-    renderTransactions();
-
-    renderDebts();
-
-    renderDebtSummary();
-
-    renderStatistics();
-
-    renderSettings();
-}
-
-
-/* =========================================================
-   ID GENERATOR
-   ========================================================= */
-
-function generateId() {
-
-    return (
-        Date.now().toString(36)
-        + "-"
-        + Math.random()
-            .toString(36)
-            .substring(2, 10)
+    showToast(
+        "تم حذف جميع البيانات",
+        "🗑️"
     );
+
 }
 
 
 /* =========================================================
-   ESCAPE HTML
-   ========================================================= */
+   MODAL HELPERS
+========================================================= */
 
-function escapeHTML(value) {
+function openModal(id) {
 
-    return String(value ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
+    const modal =
+        document.getElementById(id);
+
+
+    if (modal) {
+
+        modal.classList.add(
+            "show"
+        );
+
+    }
+
+}
+
+
+function closeModal(id) {
+
+    const modal =
+        document.getElementById(id);
+
+
+    if (modal) {
+
+        modal.classList.remove(
+            "show"
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   SET DEFAULT DATES
+========================================================= */
+
+function setDefaultDates() {
+
+    const transactionDate =
+        document.getElementById(
+            "transactionDate"
+        );
+
+
+    const debtDate =
+        document.getElementById(
+            "debtDate"
+        );
+
+
+    if (transactionDate) {
+
+        transactionDate.value =
+            today();
+
+    }
+
+
+    if (debtDate) {
+
+        debtDate.value =
+            today();
+
+    }
+
+}
+
+
+/* =========================================================
+   BALANCE PRIVACY
+========================================================= */
+
+let balanceHidden = false;
+
+
+function toggleBalance() {
+
+    balanceHidden =
+        !balanceHidden;
+
+
+    const balance =
+        document.getElementById(
+            "totalBalance"
+        );
+
+
+    if (balanceHidden) {
+
+        balance.textContent =
+            "••••";
+
+    } else {
+
+        balance.textContent =
+            money(
+                calculateTotalBalance()
+            );
+
+    }
+
 }
 
 
 /* =========================================================
    TOAST
-   ========================================================= */
+========================================================= */
 
 let toastTimer;
 
 
-function showToast(message) {
+function showToast(
+    message,
+    icon = "✓"
+) {
 
     const toast =
-        document.getElementById("toast");
+        document.getElementById(
+            "toast"
+        );
 
 
-    toast.textContent = message;
+    document.getElementById(
+        "toastMessage"
+    ).textContent =
+        message;
 
-    toast.classList.add("show");
+
+    document.getElementById(
+        "toastIcon"
+    ).textContent =
+        icon;
 
 
-    clearTimeout(toastTimer);
+    toast.classList.add(
+        "show"
+    );
+
+
+    clearTimeout(
+        toastTimer
+    );
 
 
     toastTimer =
-        setTimeout(() => {
+        setTimeout(
+            () => {
 
-            toast.classList.remove("show");
+                toast.classList.remove(
+                    "show"
+                );
 
-        }, 2500);
+            },
+            2500
+        );
+
 }
 
 
 /* =========================================================
-   CLOSE MODAL BY CLICKING OUTSIDE
-   ========================================================= */
+   ESCAPE HTML
+========================================================= */
 
-document.querySelectorAll(".modal")
-    .forEach(modal => {
+function escapeHTML(value) {
 
-        modal.addEventListener("click", event => {
+    if (value === null || value === undefined)
+        return "";
 
-            if (event.target === modal) {
+    return String(value)
 
-                modal.classList.remove("show");
-            }
-        });
-    });
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+
+        .replace(
+            /</g,
+            "&lt;"
+        )
+
+        .replace(
+            />/g,
+            "&gt;"
+        )
+
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+
+        .replace(
+            /'/g,
+            "&#039;"
+        );
+
+}
 
 
 /* =========================================================
-   SERVICE WORKER
-   ========================================================= */
+   CLOSE MODAL WHEN CLICKING OUTSIDE
+========================================================= */
 
-function registerServiceWorker() {
+document.addEventListener(
+    "click",
+    function(event) {
 
-    if ("serviceWorker" in navigator) {
+        if (
+            event.target.classList.contains(
+                "modal-overlay"
+            )
+        ) {
 
-        window.addEventListener("load", () => {
+            event.target.classList.remove(
+                "show"
+            );
 
-            navigator.serviceWorker
-                .register("service-worker.js")
-                .then(() => {
+        }
 
-                    console.log(
-                        "MohaBank Service Worker registered"
-                    );
-
-                })
-                .catch(error => {
-
-                    console.log(
-                        "Service Worker error:",
-                        error
-                    );
-                });
-        });
     }
-}
+);
+
+
+/* =========================================================
+   ESC KEY
+========================================================= */
+
+document.addEventListener(
+    "keydown",
+    function(event) {
+
+        if (event.key === "Escape") {
+
+            document
+                .querySelectorAll(
+                    ".modal-overlay.show"
+                )
+                .forEach(modal => {
+
+                    modal.classList.remove(
+                        "show"
+                    );
+
+                });
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+   INITIAL DATA SAVE
+========================================================= */
+
+saveData();
