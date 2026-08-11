@@ -1,0 +1,703 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    --bg: #f4f6f9;
+    --card: #ffffff;
+    --text: #111827;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --primary: #2563eb;
+    --primary-dark: #1d4ed8;
+    --income: #16a34a;
+    --expense: #dc2626;
+    --debt: #7c3aed;
+    --nav: #ffffff;
+    --input: #f9fafb;
+}
+
+body.dark {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --text: #f8fafc;
+    --muted: #94a3b8;
+    --border: #334155;
+    --nav: #1e293b;
+    --input: #0f172a;
+}
+
+body {
+    font-family:
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Arial,
+        sans-serif;
+
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 85px;
+    transition: background 0.2s, color 0.2s;
+}
+
+button,
+input,
+select,
+textarea {
+    font-family: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+.topbar {
+    height: 75px;
+    padding: 12px 18px;
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+}
+
+.topbar h1 {
+    font-size: 23px;
+}
+
+.topbar span {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.icon-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--input);
+    font-size: 19px;
+}
+
+main {
+    max-width: 850px;
+    margin: auto;
+    padding: 18px;
+}
+
+.page {
+    display: none;
+}
+
+.page.active {
+    display: block;
+}
+
+.balance-card {
+    background: linear-gradient(
+        135deg,
+        #1d4ed8,
+        #4f46e5
+    );
+
+    color: white;
+    padding: 25px;
+    border-radius: 22px;
+    box-shadow: 0 10px 30px rgba(37, 99, 235, 0.2);
+}
+
+.balance-title {
+    opacity: 0.85;
+    font-size: 14px;
+}
+
+.balance {
+    font-size: 37px;
+    font-weight: 800;
+    margin: 8px 0 25px;
+    direction: ltr;
+    text-align: right;
+}
+
+.balance-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.balance-details div {
+    background: rgba(255,255,255,0.12);
+    padding: 12px;
+    border-radius: 13px;
+}
+
+.balance-details span {
+    display: block;
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+.balance-details strong {
+    display: block;
+    margin-top: 5px;
+    font-size: 17px;
+    direction: ltr;
+}
+
+.quick-actions {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin: 18px 0 25px;
+}
+
+.action {
+    border: none;
+    background: var(--card);
+    color: var(--text);
+    border-radius: 16px;
+    padding: 15px 8px;
+    font-size: 13px;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.04);
+    border: 1px solid var(--border);
+}
+
+.action span {
+    display: block;
+    font-size: 22px;
+    margin-bottom: 7px;
+}
+
+.action.income {
+    color: var(--income);
+}
+
+.action.expense {
+    color: var(--expense);
+}
+
+.action.debt {
+    color: var(--debt);
+}
+
+.section-header,
+.page-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 25px 0 12px;
+}
+
+.section-header h2,
+.page-title h2 {
+    font-size: 19px;
+}
+
+.section-header button {
+    border: none;
+    background: transparent;
+    color: var(--primary);
+}
+
+.primary-btn {
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 15px;
+    font-weight: 600;
+}
+
+.primary-btn:hover {
+    background: var(--primary-dark);
+}
+
+.debt-summary,
+.debt-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.summary-box,
+.debt-big-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 17px;
+}
+
+.summary-box span,
+.debt-big-card span {
+    display: block;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.summary-box strong,
+.debt-big-card strong {
+    display: block;
+    margin-top: 8px;
+    font-size: 19px;
+}
+
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.transaction-item,
+.debt-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 15px;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: center;
+}
+
+.item-info {
+    min-width: 0;
+}
+
+.item-title {
+    font-weight: 700;
+    margin-bottom: 5px;
+    word-break: break-word;
+}
+
+.item-meta {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.amount {
+    font-weight: 800;
+    direction: ltr;
+    white-space: nowrap;
+}
+
+.amount.income {
+    color: var(--income);
+}
+
+.amount.expense {
+    color: var(--expense);
+}
+
+.amount.debt {
+    color: var(--debt);
+}
+
+.item-actions {
+    display: flex;
+    gap: 5px;
+    margin-top: 8px;
+}
+
+.small-btn {
+    border: 1px solid var(--border);
+    background: var(--input);
+    border-radius: 7px;
+    padding: 5px 8px;
+    font-size: 12px;
+    color: var(--text);
+}
+
+.delete-btn {
+    color: var(--expense);
+}
+
+.filters {
+    display: grid;
+    grid-template-columns: 1fr 150px;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+input,
+select,
+textarea {
+    width: 100%;
+    border: 1px solid var(--border);
+    background: var(--input);
+    color: var(--text);
+    border-radius: 10px;
+    padding: 12px;
+    outline: none;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    border-color: var(--primary);
+}
+
+label {
+    display: block;
+    margin: 13px 0 6px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.type-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.type-btn {
+    border: 1px solid var(--border);
+    background: var(--input);
+    color: var(--text);
+    padding: 12px;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+.active-income {
+    background: rgba(22,163,74,0.12);
+    border-color: var(--income);
+    color: var(--income);
+}
+
+.active-expense {
+    background: rgba(220,38,38,0.12);
+    border-color: var(--expense);
+    color: var(--expense);
+}
+
+.debt-tabs {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    margin-bottom: 15px;
+}
+
+.debt-tabs button {
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text);
+    padding: 9px 18px;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+
+.debt-tabs button.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.debt-cards {
+    margin-bottom: 20px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 17px;
+    border-radius: 15px;
+}
+
+.stat-card span {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.stat-card strong {
+    display: block;
+    margin-top: 7px;
+    font-size: 20px;
+}
+
+.chart-card {
+    margin-top: 15px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px;
+}
+
+.chart-card h3 {
+    margin-bottom: 15px;
+    font-size: 16px;
+}
+
+.stat-row {
+    margin-bottom: 14px;
+}
+
+.stat-row-head {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    margin-bottom: 5px;
+}
+
+.progress {
+    height: 9px;
+    background: var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    background: var(--primary);
+    border-radius: 10px;
+}
+
+.settings-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.setting-item {
+    padding: 17px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+}
+
+.setting-item:last-child {
+    border-bottom: none;
+}
+
+.setting-item strong {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.setting-item span {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.setting-item select {
+    width: 90px;
+}
+
+.secondary-btn {
+    background: var(--input);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 9px 13px;
+    white-space: nowrap;
+}
+
+.file-btn {
+    display: inline-block;
+    cursor: pointer;
+}
+
+.file-btn input {
+    display: none;
+}
+
+.danger-btn {
+    background: rgba(220,38,38,0.1);
+    color: var(--expense);
+    border: 1px solid rgba(220,38,38,0.3);
+    border-radius: 9px;
+    padding: 9px 13px;
+}
+
+.about {
+    text-align: center;
+    padding: 30px 10px;
+    color: var(--muted);
+}
+
+.about h2 {
+    color: var(--text);
+    margin-bottom: 5px;
+}
+
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 72px;
+    background: var(--nav);
+    border-top: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    z-index: 30;
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+.nav-btn {
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-size: 10px;
+}
+
+.nav-btn span {
+    display: block;
+    font-size: 19px;
+    margin-bottom: 3px;
+}
+
+.nav-btn.active {
+    color: var(--primary);
+    font-weight: 700;
+}
+
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 100;
+}
+
+.modal.show {
+    display: flex;
+}
+
+.modal-content {
+    width: 100%;
+    max-width: 600px;
+    max-height: 92vh;
+    overflow-y: auto;
+    background: var(--card);
+    border-radius: 22px 22px 0 0;
+    padding: 20px;
+    animation: slideUp 0.2s ease;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(100%);
+    }
+
+    to {
+        transform: translateY(0);
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.modal-header button {
+    border: none;
+    background: var(--input);
+    color: var(--text);
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    font-size: 23px;
+}
+
+.submit-btn {
+    width: 100%;
+    margin-top: 20px;
+    padding: 14px;
+    border: none;
+    border-radius: 11px;
+    background: var(--primary);
+    color: white;
+    font-weight: 700;
+    font-size: 15px;
+}
+
+.toast {
+    position: fixed;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #111827;
+    color: white;
+    padding: 12px 18px;
+    border-radius: 10px;
+    opacity: 0;
+    pointer-events: none;
+    transition: 0.25s;
+    z-index: 200;
+    white-space: nowrap;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.empty {
+    text-align: center;
+    padding: 35px 15px;
+    color: var(--muted);
+    background: var(--card);
+    border: 1px dashed var(--border);
+    border-radius: 15px;
+}
+
+.overdue {
+    color: var(--expense);
+    font-weight: 700;
+}
+
+@media (max-width: 600px) {
+
+    main {
+        padding: 14px;
+    }
+
+    .quick-actions {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .balance {
+        font-size: 32px;
+    }
+
+    .filters {
+        grid-template-columns: 1fr;
+    }
+
+    .setting-item {
+        align-items: flex-start;
+    }
+}
+
+@media (min-width: 700px) {
+
+    .modal {
+        align-items: center;
+    }
+
+    .modal-content {
+        border-radius: 20px;
+        max-height: 90vh;
+    }
+}

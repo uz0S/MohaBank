@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#111827">
+    <meta name="description" content="MohaBank - إدارة أموالك وديونك الشخصية">
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="style.css">
+    <title>MohaBank</title>
+</head>
+
+<body>
+
+<header class="topbar">
+    <div>
+        <h1>MohaBank</h1>
+        <span>إدارة أموالك بسهولة</span>
+    </div>
+
+    <button id="themeBtn" class="icon-btn" title="الوضع الليلي">🌙</button>
+</header>
+
+<main>
+
+    <!-- Dashboard -->
+    <section id="dashboard" class="page active">
+
+        <div class="balance-card">
+            <div class="balance-title">رصيدك الحالي</div>
+            <div id="currentBalance" class="balance">0.00 د.أ</div>
+
+            <div class="balance-details">
+                <div>
+                    <span>إجمالي الدخل</span>
+                    <strong id="totalIncome">0.00</strong>
+                </div>
+
+                <div>
+                    <span>إجمالي المصروف</span>
+                    <strong id="totalExpense">0.00</strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="quick-actions">
+            <button class="action income" onclick="openTransactionModal('income')">
+                <span>＋</span>
+                دخل
+            </button>
+
+            <button class="action expense" onclick="openTransactionModal('expense')">
+                <span>－</span>
+                مصروف
+            </button>
+
+            <button class="action debt" onclick="openDebtModal('owedToMe')">
+                <span>🤝</span>
+                لي عند الآخرين
+            </button>
+
+            <button class="action debt" onclick="openDebtModal('iOwe')">
+                <span>💳</span>
+                عليّ للآخرين
+            </button>
+        </div>
+
+        <div class="section-header">
+            <h2>ملخص الديون</h2>
+            <button onclick="showPage('debts')">عرض الكل</button>
+        </div>
+
+        <div class="debt-summary">
+            <div class="summary-box">
+                <span>لك عند الآخرين</span>
+                <strong id="owedToMeTotal">0.00 د.أ</strong>
+            </div>
+
+            <div class="summary-box">
+                <span>عليك للآخرين</span>
+                <strong id="iOweTotal">0.00 د.أ</strong>
+            </div>
+        </div>
+
+        <div class="section-header">
+            <h2>آخر العمليات</h2>
+            <button onclick="showPage('transactions')">عرض الكل</button>
+        </div>
+
+        <div id="recentTransactions" class="list"></div>
+
+    </section>
+
+
+    <!-- Transactions -->
+    <section id="transactions" class="page">
+
+        <div class="page-title">
+            <h2>العمليات</h2>
+            <button class="primary-btn" onclick="openTransactionModal()">
+                ＋ إضافة
+            </button>
+        </div>
+
+        <div class="filters">
+
+            <input
+                id="transactionSearch"
+                type="search"
+                placeholder="🔎 بحث..."
+                oninput="renderTransactions()"
+            >
+
+            <select id="transactionFilter" onchange="renderTransactions()">
+                <option value="all">كل العمليات</option>
+                <option value="income">الدخل</option>
+                <option value="expense">المصروفات</option>
+            </select>
+
+        </div>
+
+        <div id="transactionsList" class="list"></div>
+
+    </section>
+
+
+    <!-- Debts -->
+    <section id="debts" class="page">
+
+        <div class="page-title">
+            <h2>الديون</h2>
+            <button class="primary-btn" onclick="openDebtModal()">
+                ＋ دين جديد
+            </button>
+        </div>
+
+        <div class="debt-tabs">
+            <button class="active" onclick="setDebtTab('all', this)">الكل</button>
+            <button onclick="setDebtTab('owedToMe', this)">لي</button>
+            <button onclick="setDebtTab('iOwe', this)">عليّ</button>
+        </div>
+
+        <div class="debt-cards">
+
+            <div class="debt-big-card">
+                <span>إجمالي لي</span>
+                <strong id="debtsPageOwedToMe">0.00 د.أ</strong>
+            </div>
+
+            <div class="debt-big-card">
+                <span>إجمالي عليّ</span>
+                <strong id="debtsPageIOwe">0.00 د.أ</strong>
+            </div>
+
+        </div>
+
+        <div id="debtsList" class="list"></div>
+
+    </section>
+
+
+    <!-- Statistics -->
+    <section id="statistics" class="page">
+
+        <div class="page-title">
+            <h2>الإحصائيات</h2>
+        </div>
+
+        <div class="stats-grid">
+
+            <div class="stat-card">
+                <span>عدد العمليات</span>
+                <strong id="statTransactions">0</strong>
+            </div>
+
+            <div class="stat-card">
+                <span>متوسط المصروف</span>
+                <strong id="statAverageExpense">0.00 د.أ</strong>
+            </div>
+
+            <div class="stat-card">
+                <span>أكبر مصروف</span>
+                <strong id="statLargestExpense">0.00 د.أ</strong>
+            </div>
+
+            <div class="stat-card">
+                <span>صافي المبلغ</span>
+                <strong id="statNet">0.00 د.أ</strong>
+            </div>
+
+        </div>
+
+        <div class="chart-card">
+            <h3>المصروفات حسب التصنيف</h3>
+            <div id="categoryStats"></div>
+        </div>
+
+        <div class="chart-card">
+            <h3>المصروفات الشهرية</h3>
+            <div id="monthlyStats"></div>
+        </div>
+
+    </section>
+
+
+    <!-- Settings -->
+    <section id="settings" class="page">
+
+        <div class="page-title">
+            <h2>الإعدادات</h2>
+        </div>
+
+        <div class="settings-card">
+
+            <div class="setting-item">
+                <div>
+                    <strong>العملة</strong>
+                    <span>العملة المستخدمة في التطبيق</span>
+                </div>
+
+                <select id="currencySelect" onchange="changeCurrency()">
+                    <option value="JOD">د.أ</option>
+                    <option value="USD">$</option>
+                    <option value="SAR">ر.س</option>
+                    <option value="AED">د.إ</option>
+                </select>
+            </div>
+
+            <div class="setting-item">
+                <div>
+                    <strong>تصدير البيانات</strong>
+                    <span>حفظ نسخة احتياطية من جميع بياناتك</span>
+                </div>
+
+                <button class="secondary-btn" onclick="exportData()">
+                    📤 تصدير
+                </button>
+            </div>
+
+            <div class="setting-item">
+                <div>
+                    <strong>استيراد البيانات</strong>
+                    <span>استعادة نسخة احتياطية</span>
+                </div>
+
+                <label class="secondary-btn file-btn">
+                    📥 استيراد
+                    <input type="file" accept=".json" onchange="importData(event)">
+                </label>
+            </div>
+
+            <div class="setting-item danger-item">
+                <div>
+                    <strong>حذف جميع البيانات</strong>
+                    <span>لا يمكن التراجع عن هذه العملية</span>
+                </div>
+
+                <button class="danger-btn" onclick="deleteAllData()">
+                    🗑 حذف
+                </button>
+            </div>
+
+        </div>
+
+        <div class="about">
+            <h2>MohaBank</h2>
+            <p>إدارة مالية شخصية بسيطة وسريعة.</p>
+            <p>الإصدار 1.0.0</p>
+        </div>
+
+    </section>
+
+</main>
+
+
+<!-- Bottom Navigation -->
+<nav class="bottom-nav">
+
+    <button class="nav-btn active" onclick="showPage('dashboard', this)">
+        <span>🏠</span>
+        الرئيسية
+    </button>
+
+    <button class="nav-btn" onclick="showPage('transactions', this)">
+        <span>💸</span>
+        العمليات
+    </button>
+
+    <button class="nav-btn" onclick="showPage('debts', this)">
+        <span>🤝</span>
+        الديون
+    </button>
+
+    <button class="nav-btn" onclick="showPage('statistics', this)">
+        <span>📊</span>
+        إحصائيات
+    </button>
+
+    <button class="nav-btn" onclick="showPage('settings', this)">
+        <span>⚙️</span>
+        الإعدادات
+    </button>
+
+</nav>
+
+
+<!-- Transaction Modal -->
+<div id="transactionModal" class="modal">
+
+    <div class="modal-content">
+
+        <div class="modal-header">
+            <h2 id="transactionModalTitle">إضافة عملية</h2>
+            <button onclick="closeModal('transactionModal')">×</button>
+        </div>
+
+        <form id="transactionForm">
+
+            <input type="hidden" id="transactionId">
+
+            <label>نوع العملية</label>
+
+            <div class="type-buttons">
+
+                <button type="button"
+                        id="incomeTypeBtn"
+                        class="type-btn active-income"
+                        onclick="selectTransactionType('income')">
+                    📥 دخل
+                </button>
+
+                <button type="button"
+                        id="expenseTypeBtn"
+                        class="type-btn"
+                        onclick="selectTransactionType('expense')">
+                    📤 مصروف
+                </button>
+
+            </div>
+
+            <input type="hidden" id="transactionType" value="income">
+
+            <label for="transactionAmount">المبلغ</label>
+            <input
+                id="transactionAmount"
+                type="number"
+                min="0"
+                step="0.01"
+                required
+                placeholder="مثال: 25"
+            >
+
+            <label for="transactionTitle">الوصف</label>
+            <input
+                id="transactionTitle"
+                type="text"
+                maxlength="100"
+                required
+                placeholder="مثال: راتب، بنزين، غداء..."
+            >
+
+            <label for="transactionCategory">التصنيف</label>
+
+            <select id="transactionCategory">
+
+                <option value="راتب">راتب</option>
+                <option value="عمل">عمل</option>
+                <option value="هدية">هدية</option>
+                <option value="طعام">طعام</option>
+                <option value="مواصلات">مواصلات</option>
+                <option value="جامعة">جامعة</option>
+                <option value="تسوق">تسوق</option>
+                <option value="فواتير">فواتير</option>
+                <option value="ترفيه">ترفيه</option>
+                <option value="صحة">صحة</option>
+                <option value="سيارة">سيارة</option>
+                <option value="أخرى">أخرى</option>
+
+            </select>
+
+            <label for="transactionDate">التاريخ</label>
+
+            <input
+                id="transactionDate"
+                type="date"
+                required
+            >
+
+            <label for="transactionNote">ملاحظات</label>
+
+            <textarea
+                id="transactionNote"
+                rows="3"
+                maxlength="300"
+                placeholder="ملاحظات اختيارية..."
+            ></textarea>
+
+            <button class="submit-btn" type="submit">
+                حفظ العملية
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+<!-- Debt Modal -->
+<div id="debtModal" class="modal">
+
+    <div class="modal-content">
+
+        <div class="modal-header">
+            <h2 id="debtModalTitle">إضافة دين</h2>
+            <button onclick="closeModal('debtModal')">×</button>
+        </div>
+
+        <form id="debtForm">
+
+            <input type="hidden" id="debtId">
+
+            <label>نوع الدين</label>
+
+            <div class="type-buttons">
+
+                <button
+                    type="button"
+                    id="owedToMeBtn"
+                    class="type-btn active-income"
+                    onclick="selectDebtType('owedToMe')">
+                    👤 لي عند شخص
+                </button>
+
+                <button
+                    type="button"
+                    id="iOweBtn"
+                    class="type-btn"
+                    onclick="selectDebtType('iOwe')">
+                    💳 عليّ لشخص
+                </button>
+
+            </div>
+
+            <input type="hidden" id="debtType" value="owedToMe">
+
+            <label for="debtPerson">اسم الشخص</label>
+
+            <input
+                id="debtPerson"
+                type="text"
+                required
+                maxlength="80"
+                placeholder="مثال: أحمد"
+            >
+
+            <label for="debtAmount">المبلغ</label>
+
+            <input
+                id="debtAmount"
+                type="number"
+                min="0"
+                step="0.01"
+                required
+                placeholder="مثال: 50"
+            >
+
+            <label for="debtDate">التاريخ</label>
+
+            <input id="debtDate" type="date" required>
+
+            <label for="debtDueDate">تاريخ الاستحقاق</label>
+
+            <input id="debtDueDate" type="date">
+
+            <label for="debtNote">ملاحظات</label>
+
+            <textarea
+                id="debtNote"
+                rows="3"
+                maxlength="300"
+                placeholder="ملاحظات..."
+            ></textarea>
+
+            <button class="submit-btn" type="submit">
+                حفظ الدين
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
+<script src="app.js"></script>
+
+</body>
+</html>
